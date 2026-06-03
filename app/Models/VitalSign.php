@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class VitalSign extends Model
+{
+    use \App\Traits\HasPublicUuid;
+
+    protected $fillable = [
+        'patient_id',
+        'consultation_id',
+        'weight',
+        'height',
+        'systolic_bp',
+        'diastolic_bp',
+        'heart_rate',
+        'temperature',
+        'oxygen_sat',
+        'date',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'date' => 'datetime',
+        ];
+    }
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function consultation()
+    {
+        return $this->belongsTo(Consultation::class);
+    }
+}

@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
+    use HasFactory, Notifiable, \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes, \Laravel\Sanctum\HasApiTokens;
 
     protected $fillable = [
         'email',
@@ -39,5 +39,10 @@ class User extends Authenticatable
             'role' => \App\Enums\UserRole::class,
             'plan_type' => \App\Enums\PlanType::class,
         ];
+    }
+
+    public function getAuthPasswordName()
+    {
+        return 'password_hash';
     }
 }

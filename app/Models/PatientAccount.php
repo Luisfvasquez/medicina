@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PatientAccount extends Model
+class PatientAccount extends Model implements \Tymon\JWTAuth\Contracts\JWTSubject
 {
     use \App\Traits\HasPublicUuid;
 
@@ -19,5 +19,19 @@ class PatientAccount extends Model
     public function patient()
     {
         return $this->hasOne(Patient::class);
+    }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [
+            'id' => $this->id,
+            'email' => $this->email,
+            'phone' => $this->phone,
+        ];
     }
 }

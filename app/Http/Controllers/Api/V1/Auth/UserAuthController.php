@@ -1,0 +1,134 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\DoctorRegisterRequest;
+use App\Http\Requests\Auth\ProviderRegisterRequest;
+use App\Models\User;
+use App\Models\ProviderProfile;
+use App\Models\VerificationDocument;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+
+class UserAuthController extends Controller
+{
+    public function registerDoctor(DoctorRegisterRequest $request): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = User::create([
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'password_hash' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'role' => 'DOCTOR',
+                'is_active' => true,
+                'plan_type' => 'FREE',
+                'specialty' => $request->specialty,
+            ]);
+
+            // Manejo de archivo omitido en esta fase inicial, se guardaría en storage real.
+            $path = $request->file('medical_license')->store('licenses', 'local');
+
+            VerificationDocument::create([
+                'user_id' => $user->id,
+                'type' => 'MEDICAL_LICENSE',
+                'file_path' => $path,
+                'status' => 'PENDING',
+            ]);
+
+            DB::commit();
+
+            $token = auth('user_api')->login($user);
+            return $this->respondWithToken($token);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Registration failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function registerProvider(ProviderRegisterRequest $request): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = User::create([
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'password_hash' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'role' => 'PROVIDER',
+                'is_active' => true,
+                'plan_type' => 'FREE',
+            ]);
+
+            ProviderProfile::create([
+                'user_id' => $user->id,
+                'business_name' => $request->business_name,
+                'provider_type' => $request->business_type,
+                'tax_id' => $request->tax_id,
+                'is_verified' => false,
+            ]);
+
+            $path = $request->file('business_document')->store('business_docs', 'local');
+
+            VerificationDocument::create([
+                'user_id' => $user->id,
+                'type' => 'BUSINESS_REGISTRATION',
+                'file_path' => $path,
+                'status' => 'PENDING',
+            ]);
+
+            DB::commit();
+
+            $token = auth('user_api')->login($user);
+            return $this->respondWithToken($token);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Registration failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $credentials = request(['email', 'password']);
+
+        if (! $token = auth('user_api')->attempt($credentials)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        return $this->respondWithToken($token);
+    }
+
+    public function me(): JsonResponse
+    {
+        return response()->json(auth('user_api')->user());
+    }
+
+    public function logout(): JsonResponse
+    {
+        auth('user_api')->logout();
+
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
+    public function refresh(): JsonResponse
+    {
+        return $this->respondWithToken(auth('user_api')->refresh());
+    }
+
+    protected function respondWithToken($token): JsonResponse
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth('user_api')->factory()->getTTL() * 60
+        ]);
+    }
+}

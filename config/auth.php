@@ -42,6 +42,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'user_api' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'patient_api' => [
+            'driver' => 'jwt',
+            'provider' => 'patient_accounts',
+        ],
     ],
 
     /*
@@ -67,10 +75,10 @@ return [
             'model' => env('AUTH_MODEL', User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'patient_accounts' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\PatientAccount::class,
+        ],
     ],
 
     /*

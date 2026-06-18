@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubject
 {
-    use HasFactory, Notifiable, \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes, \Laravel\Sanctum\HasApiTokens;
+    use HasFactory, Notifiable, \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
 
     protected $fillable = [
         'email',
@@ -44,5 +44,20 @@ class User extends Authenticatable
     public function getAuthPasswordName()
     {
         return 'password_hash';
+    }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [
+            'id' => $this->id,
+            'email' => $this->email,
+            'role' => $this->role,
+            'isActive' => $this->is_active,
+        ];
     }
 }

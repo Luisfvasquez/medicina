@@ -13,6 +13,9 @@ class PatientAccount extends Model implements \Tymon\JWTAuth\Contracts\JWTSubjec
         'email',
         'password_hash',
         'full_name',
+        'national_id',
+        'username',
+        'city_id',
         'avatar_url',
     ];
 

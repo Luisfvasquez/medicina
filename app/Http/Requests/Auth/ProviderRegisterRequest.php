@@ -18,9 +18,10 @@ class ProviderRegisterRequest extends FormRequest
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
-            'business_name' => 'required|string|max:255',
-            'business_type' => 'required|in:PHARMACY,LABORATORY',
-            'tax_id' => 'required|string|max:50', // RIF
+            'city_id' => 'nullable|uuid|exists:cities,id',
+            'commercial_name' => 'required|string|max:255',
+            'provider_type' => 'required|in:PHARMACY,LABORATORY',
+            'rif' => 'required|string|max:50|unique:provider_profiles,rif',
             'business_document' => 'required|file|mimes:pdf,jpg,png|max:10240',
         ];
     }

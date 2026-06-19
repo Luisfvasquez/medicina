@@ -28,8 +28,10 @@ class UserAuthController extends Controller
                 'role' => 'DOCTOR',
                 'is_active' => true,
                 'plan_type' => 'FREE',
-                'specialty' => $request->specialty,
+                'city_id' => $request->city_id,
             ]);
+
+            $user->specialties()->attach($request->specialty_ids);
 
             // Manejo de archivo omitido en esta fase inicial, se guardaría en storage real.
             $path = $request->file('medical_license')->store('licenses', 'local');
@@ -65,13 +67,14 @@ class UserAuthController extends Controller
                 'role' => 'PROVIDER',
                 'is_active' => true,
                 'plan_type' => 'FREE',
+                'city_id' => $request->city_id,
             ]);
 
             ProviderProfile::create([
                 'user_id' => $user->id,
-                'business_name' => $request->business_name,
-                'provider_type' => $request->business_type,
-                'tax_id' => $request->tax_id,
+                'commercial_name' => $request->commercial_name,
+                'type' => $request->provider_type,
+                'rif' => $request->rif,
                 'is_verified' => false,
             ]);
 

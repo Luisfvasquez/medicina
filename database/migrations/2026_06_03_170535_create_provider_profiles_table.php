@@ -18,12 +18,7 @@ return new class extends Migration
             
             $table->string('type')->comment('Farmacia o Laboratorio');
             $table->string('commercial_name')->nullable();
-            $table->string('rif')->nullable();
-            $table->string('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
-            $table->string('phone')->nullable();
-            $table->boolean('is_open')->default(false);
+            $table->string('rif')->nullable()->unique();
             $table->boolean('is_verified')->default(false);
             
             $table->timestamps();

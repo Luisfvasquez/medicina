@@ -32,7 +32,10 @@ class PatientAuthController extends Controller
             'full_name' => $request->full_name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'password_hash' => Hash::make($request->password),
+            'national_id' => $request->national_id,
+            'username' => $request->username,
+            'city_id' => $request->city_id,
+            'password_hash' => $request->password ? Hash::make($request->password) : null,
         ]);
 
         $token = auth('patient_api')->login($patient);

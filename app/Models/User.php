@@ -20,7 +20,7 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
         'role',
         'is_active',
         'plan_type',
-        'specialty',
+        'city_id',
         'logo_url',
         'signature_url',
     ];
@@ -59,5 +59,10 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
             'role' => $this->role,
             'isActive' => $this->is_active,
         ];
+    }
+
+    public function specialties()
+    {
+        return $this->belongsToMany(Specialty::class, 'doctor_specialty');
     }
 }

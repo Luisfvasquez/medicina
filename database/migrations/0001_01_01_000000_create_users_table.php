@@ -23,7 +23,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->string('plan_type')->default(\App\Enums\PlanType::FREE->value);
             
-            $table->string('specialty')->nullable();
+            $table->uuid('city_id')->nullable();
             $table->string('logo_url')->nullable();
             $table->string('signature_url')->nullable();
             

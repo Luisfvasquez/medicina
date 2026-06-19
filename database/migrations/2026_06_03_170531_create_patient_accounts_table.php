@@ -15,9 +15,12 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('phone')->unique()->comment('Identificador global (WhatsApp)');
-            $table->string('email')->unique();
-            $table->string('password_hash');
+            $table->string('email')->nullable()->unique();
+            $table->string('password_hash')->nullable();
             $table->string('full_name');
+            $table->string('national_id')->nullable()->unique();
+            $table->string('username')->nullable()->unique();
+            $table->uuid('city_id')->nullable();
             $table->string('avatar_url')->nullable();
             $table->timestamps();
         });

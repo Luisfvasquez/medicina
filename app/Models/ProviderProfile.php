@@ -13,11 +13,6 @@ class ProviderProfile extends Model
         'type',
         'commercial_name',
         'rif',
-        'address',
-        'city',
-        'state',
-        'phone',
-        'is_open',
         'is_verified',
     ];
 
@@ -25,7 +20,6 @@ class ProviderProfile extends Model
     {
         return [
             'type' => \App\Enums\ProviderType::class,
-            'is_open' => 'boolean',
             'is_verified' => 'boolean',
         ];
     }

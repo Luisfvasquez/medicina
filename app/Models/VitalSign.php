@@ -16,6 +16,7 @@ class VitalSign extends Model
         'systolic_bp',
         'diastolic_bp',
         'heart_rate',
+        'respiratory_rate',
         'temperature',
         'oxygen_sat',
         'date',

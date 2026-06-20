@@ -11,6 +11,7 @@ class FollowUp extends Model
     protected $fillable = [
         'user_id',
         'patient_id',
+        'consultation_id',
         'scheduled_date',
         'status',
         'response',
@@ -32,5 +33,10 @@ class FollowUp extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function consultation()
+    {
+        return $this->belongsTo(Consultation::class);
     }
 }

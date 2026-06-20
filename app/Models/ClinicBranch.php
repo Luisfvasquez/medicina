@@ -41,4 +41,9 @@ class ClinicBranch extends Model
     {
         return $this->hasMany(ClinicBranchMember::class);
     }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
 }

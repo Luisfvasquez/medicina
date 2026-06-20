@@ -11,9 +11,11 @@ class Consultation extends Model
     protected $fillable = [
         'user_id',
         'patient_id',
-        'clinic_id',
+        'appointment_id',
+        'clinic_branch_id',
         'form_template_id',
         'date',
+        'status',
         'reason',
         'physical_exam',
         'diagnosis',
@@ -25,6 +27,7 @@ class Consultation extends Model
     {
         return [
             'date' => 'datetime',
+            'status' => \App\Enums\ConsultationStatus::class,
             'dynamic_data' => 'array',
         ];
     }
@@ -39,9 +42,14 @@ class Consultation extends Model
         return $this->belongsTo(Patient::class);
     }
 
-    public function clinic()
+    public function appointment()
     {
-        return $this->belongsTo(Clinic::class);
+        return $this->belongsTo(Appointment::class);
+    }
+
+    public function clinicBranch()
+    {
+        return $this->belongsTo(ClinicBranch::class);
     }
 
     public function formTemplate()
@@ -62,5 +70,10 @@ class Consultation extends Model
     public function prescription()
     {
         return $this->hasOne(Prescription::class);
+    }
+
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class);
     }
 }

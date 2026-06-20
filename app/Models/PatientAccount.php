@@ -24,6 +24,11 @@ class PatientAccount extends Model implements \Tymon\JWTAuth\Contracts\JWTSubjec
         return $this->hasOne(Patient::class);
     }
 
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
+
     public function getJWTIdentifier()
     {
         return $this->getKey();

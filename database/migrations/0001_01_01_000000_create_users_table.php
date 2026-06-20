@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('plan_type')->default(\App\Enums\PlanType::FREE->value);
             
             $table->uuid('city_id')->nullable();
+            $table->foreign('city_id')->references('id')->on('cities')->onDelete('set null');
             $table->string('logo_url')->nullable();
             $table->string('signature_url')->nullable();
             

@@ -26,7 +26,10 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('address')->nullable();
-            $table->string('city')->nullable();
+            $table->uuid('city_id')->nullable();
+            $table->foreign('city_id')->references('id')->on('cities')->onDelete('set null');
+            $table->string('emergency_contact_name')->nullable();
+            $table->string('emergency_contact_phone')->nullable();
             
             $table->string('access_code')->unique()->nullable();
             $table->datetime('last_login')->nullable();

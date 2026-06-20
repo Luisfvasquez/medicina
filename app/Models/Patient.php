@@ -19,13 +19,15 @@ class Patient extends Model
         'email',
         'phone',
         'address',
-        'city',
+        'city_id',
         'access_code',
         'last_login',
         'blood_type',
         'allergies',
         'chronic_conditions',
         'private_notes',
+        'emergency_contact_name',
+        'emergency_contact_phone',
     ];
 
     protected function casts(): array
@@ -50,5 +52,10 @@ class Patient extends Model
     public function consultations()
     {
         return $this->hasMany(Consultation::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 }

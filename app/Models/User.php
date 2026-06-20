@@ -65,4 +65,9 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     {
         return $this->belongsToMany(Specialty::class, 'doctor_specialty');
     }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
 }

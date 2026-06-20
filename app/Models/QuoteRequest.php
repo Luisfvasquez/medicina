@@ -11,7 +11,7 @@ class QuoteRequest extends Model
     protected $fillable = [
         'prescription_id',
         'patient_id',
-        'city',
+        'city_id',
         'status',
     ];
 
@@ -35,5 +35,10 @@ class QuoteRequest extends Model
     public function offers()
     {
         return $this->hasMany(QuoteOffer::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 }

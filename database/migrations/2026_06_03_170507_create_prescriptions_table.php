@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
             $table->foreignId('consultation_id')->unique()->nullable()->constrained('consultations')->onDelete('set null');
-            $table->foreignId('clinic_id')->nullable();
+            $table->foreignId('clinic_id')->nullable()->constrained('clinics')->onDelete('set null');
             
             $table->datetime('date');
             $table->datetime('expiration_date')->nullable();

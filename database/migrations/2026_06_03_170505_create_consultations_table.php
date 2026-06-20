@@ -16,8 +16,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
-            // Nota: clinic_id se añade luego, cuando exista la tabla clinics para no dar error de constraint. O lo podemos hacer sin constraint si lo necesitamos ya.
-            $table->foreignId('clinic_id')->nullable();
+            $table->foreignId('clinic_id')->nullable()->constrained('clinics')->onDelete('set null');
             $table->foreignId('form_template_id')->nullable()->constrained('form_templates')->onDelete('set null')->comment('Saber con qué esquema se llenó esta historia');
             
             $table->datetime('date');

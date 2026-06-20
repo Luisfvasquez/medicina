@@ -11,14 +11,12 @@ class Clinic extends Model
     protected $fillable = [
         'name',
         'rif',
-        'address',
         'logo_url',
         'website',
-        'phone',
     ];
 
-    public function members()
+    public function branches()
     {
-        return $this->hasMany(ClinicMember::class);
+        return $this->hasMany(ClinicBranch::class);
     }
 }

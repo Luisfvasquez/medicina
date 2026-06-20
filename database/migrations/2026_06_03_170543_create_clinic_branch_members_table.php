@@ -11,16 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('clinic_members', function (Blueprint $table) {
+        Schema::create('clinic_branch_members', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('clinic_id')->constrained('clinics')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('clinic_branch_id')->constrained('clinic_branches')->onDelete('cascade');
             
             $table->string('role')->default(\App\Enums\ClinicRole::DOCTOR->value);
+            $table->string('department')->nullable();
+            $table->string('office_number')->nullable();
             $table->boolean('is_active')->default(true);
             
             $table->timestamps();
+            $table->unique(['user_id', 'clinic_branch_id']);
         });
     }
 
@@ -29,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clinic_members');
+        Schema::dropIfExists('clinic_branch_members');
     }
 };

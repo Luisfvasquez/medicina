@@ -28,4 +28,9 @@ class ProviderProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function branches()
+    {
+        return $this->hasMany(ProviderBranch::class);
+    }
 }

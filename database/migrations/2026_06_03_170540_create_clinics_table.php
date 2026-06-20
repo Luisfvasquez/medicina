@@ -16,10 +16,8 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('name');
             $table->string('rif')->nullable();
-            $table->string('address')->nullable();
             $table->string('logo_url')->nullable();
             $table->string('website')->nullable();
-            $table->string('phone')->nullable();
             $table->timestamps();
         });
     }

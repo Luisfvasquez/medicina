@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\Auth\PatientAuthController;
 use App\Http\Controllers\Api\V1\Auth\UserAuthController;
+use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\SpecialtyController;
 
 Route::prefix('v1/auth')->group(function () {
     // Patients
@@ -34,4 +36,9 @@ Route::prefix('v1/auth')->group(function () {
             Route::get('me', [UserAuthController::class, 'me']);
         });
     });
+});
+
+Route::prefix('v1')->group(function () {
+    Route::get('locations/cities', [LocationController::class, 'cities']);
+    Route::get('specialties', [SpecialtyController::class, 'index']);
 });

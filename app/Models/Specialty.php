@@ -15,6 +15,8 @@ class Specialty extends Model
 
     public function doctors()
     {
-        return $this->belongsToMany(User::class, 'doctor_specialty');
+        return $this->belongsToMany(User::class, 'doctor_specialty')
+                    ->using(DoctorSpecialty::class)
+                    ->withTimestamps();
     }
 }

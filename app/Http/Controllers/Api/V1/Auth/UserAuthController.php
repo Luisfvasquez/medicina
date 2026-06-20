@@ -39,7 +39,7 @@ class UserAuthController extends Controller
             VerificationDocument::create([
                 'user_id' => $user->id,
                 'type' => 'MEDICAL_LICENSE',
-                'file_path' => $path,
+                'file_url' => $path,
                 'status' => 'PENDING',
             ]);
 
@@ -83,7 +83,7 @@ class UserAuthController extends Controller
             VerificationDocument::create([
                 'user_id' => $user->id,
                 'type' => 'BUSINESS_REGISTRATION',
-                'file_path' => $path,
+                'file_url' => $path,
                 'status' => 'PENDING',
             ]);
 

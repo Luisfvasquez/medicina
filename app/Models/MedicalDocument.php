@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class MedicalDocument extends Model
 {
-    use \App\Traits\HasPublicUuid;
+    use HasPublicUuid;
 
     protected $fillable = [
         'user_id',
         'patient_id',
+        'clinic_branch_id',
         'type',
         'content',
         'public_token',
@@ -31,5 +32,10 @@ class MedicalDocument extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function clinicBranch()
+    {
+        return $this->belongsTo(ClinicBranch::class, 'clinic_branch_id');
     }
 }

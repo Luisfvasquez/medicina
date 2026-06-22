@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class QuoteOffer extends Model
 {
-    use \App\Traits\HasPublicUuid;
+    use HasPublicUuid;
 
     protected $fillable = [
         'quote_request_id',
@@ -16,6 +16,13 @@ class QuoteOffer extends Model
         'availability',
         'comments',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'price' => 'decimal:2',
+        ];
+    }
 
     public function quoteRequest()
     {

@@ -3,16 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Prescription extends Model
 {
-    use \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
+    use HasPublicUuid, SoftDeletes;
 
     protected $fillable = [
         'user_id',
         'patient_id',
         'consultation_id',
-        'clinic_id',
+        'clinic_branch_id',
         'date',
         'expiration_date',
         'notes',
@@ -44,13 +45,18 @@ class Prescription extends Model
         return $this->belongsTo(Consultation::class);
     }
 
-    public function clinic()
+    public function clinicBranch()
     {
-        return $this->belongsTo(Clinic::class);
+        return $this->belongsTo(ClinicBranch::class, 'clinic_branch_id');
     }
 
     public function items()
     {
         return $this->hasMany(PrescriptionItem::class);
+    }
+
+    public function quoteRequests()
+    {
+        return $this->hasMany(QuoteRequest::class);
     }
 }

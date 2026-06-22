@@ -6,13 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProviderProfile extends Model
 {
-    use \App\Traits\HasPublicUuid;
+    use HasPublicUuid;
 
     protected $fillable = [
         'user_id',
         'type',
         'commercial_name',
         'rif',
+        'address',
+        'city_id',
+        'phone',
+        'is_open',
         'is_verified',
     ];
 
@@ -20,6 +24,7 @@ class ProviderProfile extends Model
     {
         return [
             'type' => \App\Enums\ProviderType::class,
+            'is_open' => 'boolean',
             'is_verified' => 'boolean',
         ];
     }
@@ -27,6 +32,11 @@ class ProviderProfile extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 
     public function branches()

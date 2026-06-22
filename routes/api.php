@@ -18,6 +18,12 @@ use App\Http\Controllers\Api\V1\PatientSurgicalHistoryController;
 use App\Http\Controllers\Api\V1\PatientFamilyHistoryController;
 use App\Http\Controllers\Api\V1\PatientVaccinationController;
 use App\Http\Controllers\Api\V1\FollowUpController;
+use App\Http\Controllers\Api\V1\Phase3\MedicationController;
+use App\Http\Controllers\Api\V1\Phase3\PrescriptionController;
+use App\Http\Controllers\Api\V1\Phase3\PrescriptionTemplateController;
+use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
+use App\Http\Controllers\Api\V1\Phase3\QuoteRequestController;
+use App\Http\Controllers\Api\V1\Phase3\QuoteOfferController;
 
 Route::prefix('v1/auth')->group(function () {
     Route::prefix('patients')->group(function () {
@@ -138,5 +144,53 @@ Route::prefix('v1')->group(function () {
         Route::put('patients/{patient}/vaccinations/{vaccination}', [PatientVaccinationController::class, 'update']);
         Route::patch('patients/{patient}/vaccinations/{vaccination}', [PatientVaccinationController::class, 'update']);
         Route::delete('patients/{patient}/vaccinations/{vaccination}', [PatientVaccinationController::class, 'destroy']);
+
+        // Phase 3: Medications / Vademécum
+        Route::get('medications', [MedicationController::class, 'index']);
+        Route::post('medications', [MedicationController::class, 'store'])->middleware('idempotent');
+        Route::get('medications/{medication}', [MedicationController::class, 'show']);
+        Route::put('medications/{medication}', [MedicationController::class, 'update']);
+        Route::patch('medications/{medication}', [MedicationController::class, 'update']);
+        Route::delete('medications/{medication}', [MedicationController::class, 'destroy']);
+
+        // Phase 3: Prescriptions
+        Route::get('prescriptions', [PrescriptionController::class, 'index']);
+        Route::post('prescriptions', [PrescriptionController::class, 'store'])->middleware('idempotent');
+        Route::get('prescriptions/{prescription}', [PrescriptionController::class, 'show']);
+        Route::put('prescriptions/{prescription}', [PrescriptionController::class, 'update']);
+        Route::patch('prescriptions/{prescription}', [PrescriptionController::class, 'update']);
+        Route::delete('prescriptions/{prescription}', [PrescriptionController::class, 'destroy']);
+
+        // Phase 3: Prescription Templates
+        Route::get('prescription-templates', [PrescriptionTemplateController::class, 'index']);
+        Route::post('prescription-templates', [PrescriptionTemplateController::class, 'store'])->middleware('idempotent');
+        Route::get('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'show']);
+        Route::put('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'update']);
+        Route::patch('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'update']);
+        Route::delete('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'destroy']);
+
+        // Phase 3: Medical Documents
+        Route::get('medical-documents', [MedicalDocumentController::class, 'index']);
+        Route::post('medical-documents', [MedicalDocumentController::class, 'store'])->middleware('idempotent');
+        Route::get('medical-documents/{medical_document}', [MedicalDocumentController::class, 'show']);
+        Route::put('medical-documents/{medical_document}', [MedicalDocumentController::class, 'update']);
+        Route::patch('medical-documents/{medical_document}', [MedicalDocumentController::class, 'update']);
+        Route::delete('medical-documents/{medical_document}', [MedicalDocumentController::class, 'destroy']);
+
+        // Phase 3: Quote Requests
+        Route::get('quote-requests', [QuoteRequestController::class, 'index']);
+        Route::post('quote-requests', [QuoteRequestController::class, 'store'])->middleware('idempotent');
+        Route::get('quote-requests/{quote_request}', [QuoteRequestController::class, 'show']);
+        Route::put('quote-requests/{quote_request}', [QuoteRequestController::class, 'update']);
+        Route::patch('quote-requests/{quote_request}', [QuoteRequestController::class, 'update']);
+        Route::delete('quote-requests/{quote_request}', [QuoteRequestController::class, 'destroy']);
+
+        // Phase 3: Quote Offers (nested under quote-requests)
+        Route::get('quote-requests/{quote_request}/offers', [QuoteOfferController::class, 'index']);
+        Route::post('quote-requests/{quote_request}/offers', [QuoteOfferController::class, 'store'])->middleware('idempotent');
+        Route::get('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'show']);
+        Route::put('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'update']);
+        Route::patch('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'update']);
+        Route::delete('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'destroy']);
     });
 });

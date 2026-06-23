@@ -36,6 +36,11 @@ class PatientAccount extends Model implements JWTSubject
         return $this->belongsTo(City::class);
     }
 
+    public function getAuthPasswordName()
+    {
+        return 'password_hash';
+    }
+
     public function getJWTIdentifier()
     {
         return $this->getKey();

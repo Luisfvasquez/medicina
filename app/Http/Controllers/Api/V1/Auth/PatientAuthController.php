@@ -70,7 +70,8 @@ class PatientAuthController extends Controller
      */
     public function me(): JsonResponse
     {
-        return response()->json(auth('patient_api')->user());
+        $patient = auth('patient_api')->user()->load('city', 'patients');
+        return response()->json($patient);
     }
 
     /**

@@ -15,12 +15,9 @@ return new class extends Migration
             $table->string('phone')->nullable()->after('address');
             $table->boolean('is_open')->default(false)->after('phone');
             
-            // city_id as UUID (cities.id is UUID, not bigint)
-            $table->uuid('city_id')->nullable()->after('address');
+            // city_id as BIGINT (cities.id is bigint)
+            $table->foreignId('city_id')->nullable()->after('address')->constrained('cities')->onDelete('set null');
         });
-
-        // Add FK separately (can't use constrained() with uuid)
-        DB::statement('ALTER TABLE provider_profiles ADD CONSTRAINT provider_profiles_city_id_foreign FOREIGN KEY (city_id) REFERENCES cities(id) ON DELETE SET NULL');
 
         // Make required fields NOT NULL per schema
         Schema::table('provider_profiles', function (Blueprint $table) {

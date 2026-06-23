@@ -123,7 +123,8 @@ class UserAuthController extends Controller
 
     public function me(): JsonResponse
     {
-        return response()->json(auth('user_api')->user());
+        $user = auth('user_api')->user()->load('providerProfile', 'city');
+        return response()->json($user);
     }
 
     public function logout(): JsonResponse

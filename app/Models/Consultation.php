@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Enums\ConsultationStatus;
+use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 
 class Consultation extends Model
 {
-    use \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
+    use HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
 
     protected $fillable = [
         'user_id',
         'patient_id',
+        'patient_account_id',
         'appointment_id',
         'clinic_branch_id',
         'form_template_id',
@@ -27,7 +30,7 @@ class Consultation extends Model
     {
         return [
             'date' => 'datetime',
-            'status' => \App\Enums\ConsultationStatus::class,
+            'status' => ConsultationStatus::class,
             'dynamic_data' => 'array',
         ];
     }
@@ -40,6 +43,11 @@ class Consultation extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function patientAccount()
+    {
+        return $this->belongsTo(PatientAccount::class);
     }
 
     public function appointment()

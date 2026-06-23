@@ -680,7 +680,6 @@ GET /api/v1/locations/cities?state_id={uuid}   — Ciudades por estado
 
 Estas rutas están en la documentación de API pero **NO existen aún** en `routes/api.php`:
 
-- `GET /verify/{publicToken}` — Verificación de receta/documento por QR (farmacia)
 - `GET /consultations/{id}/pdf` — Exportar consulta a PDF
 - `GET /prescriptions/{id}/pdf` — Exportar receta a PDF
 - `GET /invoices/{id}/pdf` — Exportar factura a PDF
@@ -690,12 +689,103 @@ Estas rutas están en la documentación de API pero **NO existen aún** en `rout
 
 ---
 
+## 11 Patient Portal (Phase 5)
+
+### 11.1 Auth — Patient API
+
+El patient portal usa el mismo flujo JWT que doctor/provider pero con `auth:patient_api`:
+
+```javascript
+// Login
+POST /api/v1/auth/patients/login
+Body: { "email": "...", "password": "..." }
+Response: { "data": { "access_token": "...", "token_type": "bearer", "expires_in": 3600 } }
+
+// Refresh
+POST /api/v1/auth/patients/refresh
+Headers: Authorization: Bearer {token}
+
+// Logout
+POST /api/v1/auth/patients/logout
+Headers: Authorization: Bearer {token}
+
+// Usuario actual
+GET /api/v1/auth/patients/me
+Headers: Authorization: Bearer {token}
+```
+
+### 11.2 Patient Portal Endpoints
+
+**Base path:** `/api/v1/patients/me`
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/appointments` | Lista de citas del paciente |
+| GET | `/appointments/{id}` | Detalle de cita |
+| GET | `/consultations` | Lista de consultas |
+| GET | `/consultations/{id}` | Detalle de consulta |
+| GET | `/prescriptions` | Lista de recetas |
+| GET | `/prescriptions/{id}` | Detalle de receta |
+| GET | `/quote-requests` | Lista de solicitudes de cotización |
+| GET | `/quote-requests/{id}` | Detalle de solicitud |
+| GET | `/quote-requests/{id}/offers` | Ofertas de una solicitud |
+| GET | `/lab-results` | Lista de resultados de laboratorio |
+| GET | `/lab-results/{id}` | Detalle de resultado |
+| GET | `/invoices` | Lista de facturas |
+| GET | `/invoices/{id}` | Detalle de factura |
+| GET | `/invoices/{id}/payments` | Pagos de una factura |
+| GET | `/notifications` | Lista de notificaciones |
+| GET | `/notifications/{id}` | Detalle de notificación |
+| PATCH | `/notifications/{id}/read` | Marcar como leída |
+| POST | `/notifications/read-all` | Marcar todas como leídas |
+| GET | `/notifications/unread-count` | Count de no leídas |
+| GET | `/medical-documents` | Lista de documentos médicos |
+| GET | `/medical-documents/{id}` | Detalle de documento |
+
+### 11.3 Public Verification (sin auth)
+
+Para verificar recetas/documentos por QR:
+
+```
+GET /api/v1/verify/prescription/{publicToken}
+GET /api/v1/verify/document/{publicToken}
+```
+
+Response ejemplo:
+```json
+{
+  "data": {
+    "type": "prescription",
+    "valid": true,
+    "prescription": {
+      "id": "uuid",
+      "date": "2026-06-23T10:00:00Z",
+      "status": "active",
+      "doctor": { "name": "Dr. ...", "professional_id": "...", "specialty": "..." },
+      "patient": { "name": "...", "national_id": "..." },
+      "clinic": "Nombre Clínica",
+      "items": [...]
+    }
+  }
+}
+```
+
+### 11.4 Permisos del Patient Portal
+
+El patient portal solo permite **lectura** (no write). El paciente puede:
+- Ver sus citas, consultas, recetas, resultados, facturas
+- Ver ofertas de farmacias para sus recetas
+- Marcar notificaciones como leídas
+- Ver sus documentos médicos
+
+---
+
 ## Anexo: Notas de la Guía
 
-- **Última actualización:** 2026-06-22
+- **Última actualización:** 2026-06-23
 - **Versión del API:** v1
-- **Versión del backend:** Phase 1-4 completo, Phase 5 (móvil paciente) pendiente
+- **Versión del backend:** Phase 1-4 completo, Phase 5 completo
 - **Issues conocidos:**
-  - Paciente no tiene acceso API a sus datos médicos (pendiente Phase 5)
-  - Endpoints de verificación por QR no implementados
-  - Endpoints de exportación PDF no implementados
+  - Endpoints de exportación PDF no implementados (consultation, prescription, invoice, document → PDF)
+  - WebSockets no implementados — polling para notificaciones y cotizaciones
+  - Sobrepago de facturas no validado en backend

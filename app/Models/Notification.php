@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\NotifType;
+use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
-    use \App\Traits\HasPublicUuid;
+    use HasPublicUuid;
 
     protected $fillable = [
         'user_id',
+        'patient_account_id',
         'type',
         'title',
         'message',
@@ -20,7 +23,7 @@ class Notification extends Model
     protected function casts(): array
     {
         return [
-            'type' => \App\Enums\NotifType::class,
+            'type' => NotifType::class,
             'is_read' => 'boolean',
         ];
     }
@@ -28,5 +31,10 @@ class Notification extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function patientAccount()
+    {
+        return $this->belongsTo(PatientAccount::class);
     }
 }

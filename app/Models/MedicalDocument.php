@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DocType;
 use Illuminate\Database\Eloquent\Model;
 
 class MedicalDocument extends Model
@@ -11,6 +12,7 @@ class MedicalDocument extends Model
     protected $fillable = [
         'user_id',
         'patient_id',
+        'patient_account_id',
         'clinic_branch_id',
         'type',
         'content',
@@ -20,7 +22,7 @@ class MedicalDocument extends Model
     protected function casts(): array
     {
         return [
-            'type' => \App\Enums\DocType::class,
+            'type' => DocType::class,
         ];
     }
 
@@ -32,6 +34,11 @@ class MedicalDocument extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function patientAccount()
+    {
+        return $this->belongsTo(PatientAccount::class);
     }
 
     public function clinicBranch()

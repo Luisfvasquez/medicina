@@ -1,37 +1,45 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\Auth\PatientAuthController;
 use App\Http\Controllers\Api\V1\Auth\UserAuthController;
-use App\Http\Controllers\Api\V1\LocationController;
-use App\Http\Controllers\Api\V1\SpecialtyController;
-use App\Http\Controllers\Api\V1\AppointmentController;
-use App\Http\Controllers\Api\V1\FormTemplateController;
 use App\Http\Controllers\Api\V1\ConsultationController;
-use App\Http\Controllers\Api\V1\ConsultationVitalSignController;
 use App\Http\Controllers\Api\V1\ConsultationLabRequestController;
-use App\Http\Controllers\Api\V1\MedicalBackgroundController;
-use App\Http\Controllers\Api\V1\LifestyleController;
-use App\Http\Controllers\Api\V1\ObstetricHistoryController;
-use App\Http\Controllers\Api\V1\PatientSurgicalHistoryController;
-use App\Http\Controllers\Api\V1\PatientFamilyHistoryController;
-use App\Http\Controllers\Api\V1\PatientVaccinationController;
+use App\Http\Controllers\Api\V1\ConsultationVitalSignController;
 use App\Http\Controllers\Api\V1\FollowUpController;
+use App\Http\Controllers\Api\V1\FormTemplateController;
+use App\Http\Controllers\Api\V1\LifestyleController;
+use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\MedicalBackgroundController;
+use App\Http\Controllers\Api\V1\ObstetricHistoryController;
+use App\Http\Controllers\Api\V1\PatientFamilyHistoryController;
+use App\Http\Controllers\Api\V1\PatientSurgicalHistoryController;
+use App\Http\Controllers\Api\V1\PatientVaccinationController;
+use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase3\MedicationController;
 use App\Http\Controllers\Api\V1\Phase3\PrescriptionController;
 use App\Http\Controllers\Api\V1\Phase3\PrescriptionTemplateController;
-use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
-use App\Http\Controllers\Api\V1\Phase3\QuoteRequestController;
 use App\Http\Controllers\Api\V1\Phase3\QuoteOfferController;
-use App\Http\Controllers\Api\V1\Phase4\NotificationController;
-use App\Http\Controllers\Api\V1\Phase4\VerificationDocumentController;
-use App\Http\Controllers\Api\V1\Phase4\LabResultController;
-use App\Http\Controllers\Api\V1\Phase4\PharmacyInventoryController;
+use App\Http\Controllers\Api\V1\Phase3\QuoteRequestController;
+use App\Http\Controllers\Api\V1\Phase4\AuditLogController;
 use App\Http\Controllers\Api\V1\Phase4\InvoiceController;
 use App\Http\Controllers\Api\V1\Phase4\InvoiceItemController;
+use App\Http\Controllers\Api\V1\Phase4\LabResultController;
+use App\Http\Controllers\Api\V1\Phase4\NotificationController;
 use App\Http\Controllers\Api\V1\Phase4\PaymentController;
-use App\Http\Controllers\Api\V1\Phase4\AuditLogController;
+use App\Http\Controllers\Api\V1\Phase4\PharmacyInventoryController;
+use App\Http\Controllers\Api\V1\Phase4\VerificationDocumentController;
+use App\Http\Controllers\Api\V1\Phase5\PatientAppointmentController;
+use App\Http\Controllers\Api\V1\Phase5\PatientConsultationController;
+use App\Http\Controllers\Api\V1\Phase5\PatientInvoiceController;
+use App\Http\Controllers\Api\V1\Phase5\PatientLabResultController;
+use App\Http\Controllers\Api\V1\Phase5\PatientMedicalDocumentController;
+use App\Http\Controllers\Api\V1\Phase5\PatientNotificationController;
+use App\Http\Controllers\Api\V1\Phase5\PatientPrescriptionController;
+use App\Http\Controllers\Api\V1\Phase5\PatientQuoteRequestController;
+use App\Http\Controllers\Api\V1\Phase5\VerifyController;
+use App\Http\Controllers\Api\V1\SpecialtyController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
     Route::prefix('patients')->group(function () {
@@ -258,5 +266,43 @@ Route::prefix('v1')->group(function () {
         Route::get('audit-logs', [AuditLogController::class, 'index']);
         Route::get('audit-logs/{audit_log}', [AuditLogController::class, 'show']);
         Route::get('audit-logs/patient/{patient_id}', [AuditLogController::class, 'patientHistory']);
+    });
+
+    // Phase 5: Patient Portal (auth:patient_api)
+    Route::prefix('patients/me')->middleware('auth:patient_api')->group(function () {
+        Route::get('appointments', [PatientAppointmentController::class, 'index']);
+        Route::get('appointments/{appointment}', [PatientAppointmentController::class, 'show']);
+
+        Route::get('consultations', [PatientConsultationController::class, 'index']);
+        Route::get('consultations/{consultation}', [PatientConsultationController::class, 'show']);
+
+        Route::get('prescriptions', [PatientPrescriptionController::class, 'index']);
+        Route::get('prescriptions/{prescription}', [PatientPrescriptionController::class, 'show']);
+
+        Route::get('quote-requests', [PatientQuoteRequestController::class, 'index']);
+        Route::get('quote-requests/{quote_request}', [PatientQuoteRequestController::class, 'show']);
+        Route::get('quote-requests/{quote_request}/offers', [PatientQuoteRequestController::class, 'offers']);
+
+        Route::get('lab-results', [PatientLabResultController::class, 'index']);
+        Route::get('lab-results/{lab_result}', [PatientLabResultController::class, 'show']);
+
+        Route::get('invoices', [PatientInvoiceController::class, 'index']);
+        Route::get('invoices/{invoice}', [PatientInvoiceController::class, 'show']);
+        Route::get('invoices/{invoice}/payments', [PatientInvoiceController::class, 'payments']);
+
+        Route::get('notifications', [PatientNotificationController::class, 'index']);
+        Route::get('notifications/{notification}', [PatientNotificationController::class, 'show']);
+        Route::patch('notifications/{notification}/read', [PatientNotificationController::class, 'markAsRead']);
+        Route::post('notifications/read-all', [PatientNotificationController::class, 'markAllAsRead']);
+        Route::get('notifications/unread-count', [PatientNotificationController::class, 'unreadCount']);
+
+        Route::get('medical-documents', [PatientMedicalDocumentController::class, 'index']);
+        Route::get('medical-documents/{medical_document}', [PatientMedicalDocumentController::class, 'show']);
+    });
+
+    // Phase 5: Public Verification (no auth)
+    Route::prefix('verify')->group(function () {
+        Route::get('prescription/{publicToken}', [VerifyController::class, 'verifyPrescription']);
+        Route::get('document/{publicToken}', [VerifyController::class, 'verifyDocument']);
     });
 });

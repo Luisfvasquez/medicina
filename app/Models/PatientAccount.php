@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class PatientAccount extends Model implements \Tymon\JWTAuth\Contracts\JWTSubject
+class PatientAccount extends Model implements JWTSubject
 {
-    use \App\Traits\HasPublicUuid;
+    use HasPublicUuid;
 
     protected $fillable = [
         'phone',
@@ -18,6 +20,11 @@ class PatientAccount extends Model implements \Tymon\JWTAuth\Contracts\JWTSubjec
         'city_id',
         'avatar_url',
     ];
+
+    public function patients()
+    {
+        return $this->hasMany(Patient::class);
+    }
 
     public function patient()
     {

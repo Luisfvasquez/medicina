@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
@@ -11,6 +12,7 @@ class Invoice extends Model
     protected $fillable = [
         'user_id',
         'patient_id',
+        'patient_account_id',
         'clinic_branch_id',
         'consultation_id',
         'prescription_id',
@@ -32,7 +34,7 @@ class Invoice extends Model
             'discount' => 'decimal:2',
             'total' => 'decimal:2',
             'due_date' => 'date',
-            'status' => \App\Enums\InvoiceStatus::class,
+            'status' => InvoiceStatus::class,
         ];
     }
 
@@ -44,6 +46,11 @@ class Invoice extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function patientAccount()
+    {
+        return $this->belongsTo(PatientAccount::class);
     }
 
     public function clinicBranch()

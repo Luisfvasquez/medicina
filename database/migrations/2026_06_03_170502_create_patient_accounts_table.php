@@ -20,8 +20,7 @@ return new class extends Migration
             $table->string('full_name');
             $table->string('national_id')->nullable()->unique();
             $table->string('username')->nullable()->unique();
-            $table->uuid('city_id')->nullable();
-            $table->foreign('city_id')->references('id')->on('cities')->onDelete('set null');
+            $table->foreignId('city_id')->nullable()->constrained('cities')->onDelete('set null');
             $table->string('avatar_url')->nullable();
             $table->timestamps();
         });

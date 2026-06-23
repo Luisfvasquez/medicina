@@ -12,18 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('specialties', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->uuid('uuid')->unique();
             $table->string('name')->unique();
             $table->text('description')->nullable();
             $table->timestamps();
         });
 
         Schema::create('doctor_specialty', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            // Dado que Users usa id() auto-incremental por defecto en Laravel, pero el script
-            // de LUCA dice UUID. Si users ya usa BIGINT en Laravel, lo enlazaremos así:
+            $table->id();
+            $table->uuid('uuid')->unique();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignUuid('specialty_id')->constrained('specialties')->onDelete('cascade');
+            $table->foreignId('specialty_id')->constrained('specialties')->onDelete('cascade');
             $table->unique(['user_id', 'specialty_id']);
             $table->timestamps();
         });

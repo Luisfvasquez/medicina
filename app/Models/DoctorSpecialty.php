@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Traits\HasPublicUuid;
 
 class DoctorSpecialty extends Pivot
 {
-    use HasUuids;
-
+    use HasPublicUuid;
+    
     protected $table = 'doctor_specialty';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    protected $fillable = ['uuid', 'user_id', 'specialty_id'];
 }

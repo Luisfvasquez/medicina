@@ -7,6 +7,8 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\DoctorRegisterRequest;
 use App\Http\Requests\Auth\ProviderRegisterRequest;
 use App\Models\User;
+use App\Models\City;
+use App\Models\Specialty;
 use App\Models\ProviderProfile;
 use App\Models\VerificationDocument;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,16 @@ class UserAuthController extends Controller
         try {
             DB::beginTransaction();
 
+            // Convert city_uuid to city_id (BIGINT)
+            $cityId = null;
+            if ($request->city_uuid) {
+                $city = City::where('uuid', $request->city_uuid)->first();
+                $cityId = $city?->id;
+            }
+
+            // Convert specialty_uuids to specialty_ids (BIGINT array)
+            $specialtyIds = Specialty::whereIn('uuid', $request->specialty_uuids)->pluck('id')->toArray();
+
             $user = User::create([
                 'full_name' => $request->full_name,
                 'email' => $request->email,
@@ -28,10 +40,10 @@ class UserAuthController extends Controller
                 'role' => 'DOCTOR',
                 'is_active' => true,
                 'plan_type' => 'FREE',
-                'city_id' => $request->city_id,
+                'city_id' => $cityId,
             ]);
 
-            $user->specialties()->attach($request->specialty_ids);
+            $user->specialties()->attach($specialtyIds);
 
             // Manejo de archivo omitido en esta fase inicial, se guardaría en storage real.
             $path = $request->file('medical_license')->store('licenses', 'local');

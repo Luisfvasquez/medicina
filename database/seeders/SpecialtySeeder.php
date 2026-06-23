@@ -47,7 +47,7 @@ class SpecialtySeeder extends Seeder
 
         foreach ($specialties as $name => $description) {
             Specialty::create([
-                'id' => Str::uuid(),
+                'uuid' => Str::uuid(),
                 'name' => $name,
                 'description' => $description,
             ]);

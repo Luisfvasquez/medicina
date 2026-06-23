@@ -21,6 +21,7 @@ class UserSeeder extends Seeder
 
         // 1. Admin User
         User::create([
+            'uuid' => Str::uuid(),
             'email' => 'admin@luca.com',
             'password_hash' => Hash::make('password'),
             'full_name' => 'Administrador Luca',
@@ -33,6 +34,7 @@ class UserSeeder extends Seeder
 
         // 2. Doctor User
         $doctor = User::create([
+            'uuid' => Str::uuid(),
             'email' => 'doctor@luca.com',
             'password_hash' => Hash::make('password'),
             'full_name' => 'Dr. Carlos Mendoza',
@@ -56,6 +58,7 @@ class UserSeeder extends Seeder
 
         // 3. Provider User (Pharmacy Owner)
         $providerUser = User::create([
+            'uuid' => Str::uuid(),
             'email' => 'provider@luca.com',
             'password_hash' => Hash::make('password'),
             'full_name' => 'FarmaRed S.A.',
@@ -88,6 +91,7 @@ class UserSeeder extends Seeder
 
         // 5. Patient CRM Record (Clinical record owned by the Doctor)
         Patient::create([
+            'uuid' => Str::uuid(),
             'user_id' => $doctor->id,
             'patient_account_id' => $patientAccount->id,
             'first_name' => 'Juan',

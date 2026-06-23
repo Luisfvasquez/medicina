@@ -17,8 +17,7 @@ return new class extends Migration
             $table->foreignId('provider_profile_id')->constrained('provider_profiles')->onDelete('cascade');
             $table->string('name');
             $table->string('address');
-            $table->uuid('city_id');
-            $table->foreign('city_id')->references('id')->on('cities')->onDelete('restrict');
+            $table->foreignId('city_id')->constrained('cities')->onDelete('restrict');
             $table->string('phone');
             $table->boolean('is_open')->default(false);
             $table->boolean('is_main_branch')->default(false);

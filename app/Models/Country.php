@@ -6,12 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Country extends Model
 {
-    use \Illuminate\Database\Eloquent\Concerns\HasUuids;
-    
-    protected $keyType = 'string';
-    public $incrementing = false;
-
-    protected $fillable = ['id', 'name', 'code'];
+    protected $fillable = ['uuid', 'name', 'code'];
 
     public function states()
     {

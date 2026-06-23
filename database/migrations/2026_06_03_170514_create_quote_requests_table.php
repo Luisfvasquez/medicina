@@ -16,8 +16,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('prescription_id')->constrained('prescriptions')->onDelete('cascade');
             $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
-            $table->uuid('city_id')->nullable();
-            $table->foreign('city_id')->references('id')->on('cities')->onDelete('set null');
+            $table->foreignId('city_id')->nullable()->constrained('cities')->onDelete('set null');
             $table->string('status')->default(\App\Enums\QuoteStatus::OPEN->value);
             
             // Note: Use created_at / updated_at instead of explicitly created_at datetime

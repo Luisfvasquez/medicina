@@ -11,7 +11,7 @@ class LocationSeeder extends Seeder
     public function run(): void
     {
         $country = Country::create([
-            'id' => Str::uuid(),
+            'uuid' => Str::uuid(),
             'name' => 'Venezuela',
             'code' => 'VE'
         ]);
@@ -45,13 +45,13 @@ class LocationSeeder extends Seeder
 
         foreach ($states as $stateName => $cities) {
             $state = $country->states()->create([
-                'id' => Str::uuid(),
+                'uuid' => Str::uuid(),
                 'name' => $stateName
             ]);
 
             foreach ($cities as $cityName) {
                 $state->cities()->create([
-                    'id' => Str::uuid(),
+                    'uuid' => Str::uuid(),
                     'name' => $cityName
                 ]);
             }

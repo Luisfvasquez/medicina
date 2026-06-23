@@ -12,22 +12,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('countries', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->uuid('uuid')->unique();
             $table->string('name');
             $table->string('code', 2);
             $table->timestamps();
         });
 
         Schema::create('states', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('country_id')->constrained('countries');
+            $table->id();
+            $table->uuid('uuid')->unique();
+            $table->foreignId('country_id')->constrained('countries');
             $table->string('name');
             $table->timestamps();
         });
 
         Schema::create('cities', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('state_id')->constrained('states');
+            $table->id();
+            $table->uuid('uuid')->unique();
+            $table->foreignId('state_id')->constrained('states');
             $table->string('name');
             $table->timestamps();
         });

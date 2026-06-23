@@ -6,17 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Specialty extends Model
 {
-    use \Illuminate\Database\Eloquent\Concerns\HasUuids;
-    
-    protected $keyType = 'string';
-    public $incrementing = false;
-
-    protected $fillable = ['id', 'name', 'description'];
+    protected $fillable = ['uuid', 'name', 'description'];
 
     public function doctors()
     {
         return $this->belongsToMany(User::class, 'doctor_specialty')
-                    ->using(DoctorSpecialty::class)
                     ->withTimestamps();
     }
 }

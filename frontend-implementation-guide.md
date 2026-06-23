@@ -154,8 +154,8 @@ FormData:
   full_name: "Dr. Juan Pérez"
   email: "juan@doctor.com"
   password: "Password123"
-  specialty_ids[]: "uuid-specialty-1"
-  specialty_ids[]: "uuid-specialty-2"
+  specialty_uuids[]: "uuid-specialty-1"
+  specialty_uuids[]: "uuid-specialty-2"
   medical_license: (file) license.pdf
 ```
 

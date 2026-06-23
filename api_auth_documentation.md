@@ -75,7 +75,7 @@ Este documento detalla la estructura, flujo y consumo de los endpoints de Autent
 | `password` | String | Requerido, Min: 8 | Contraseña de acceso. |
 | `phone` | String | Opcional | Número de teléfono de contacto. |
 | `city_id` | UUID | Opcional | UUID de la tabla de Ciudades en BD. |
-| `specialty_ids[0]` | UUID | Requerido, Array | El Frontend debe mandar un Array de UUIDs de especialidades. |
+| `specialty_uuids[0]` | UUID | Requerido, Array | El Frontend debe mandar un Array de UUIDs de especialidades. |
 | `medical_license` | File | Requerido | Archivo binario (pdf, jpg, png, max: 10MB). |
 
 ### B. Registro de Proveedor (Farmacia / Laboratorio)

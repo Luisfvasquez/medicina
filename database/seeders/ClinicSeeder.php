@@ -21,6 +21,7 @@ class ClinicSeeder extends Seeder
 
         // 1. Clinic (Institutional)
         $clinic = Clinic::create([
+            'uuid' => Str::uuid(),
             'name' => 'Clínica Metropolitana de Especialidades',
             'rif' => 'J-45678901-2',
             'logo_url' => 'https://luca-health.s3.amazonaws.com/logos/clinic_demo.png',

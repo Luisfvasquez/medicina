@@ -24,6 +24,14 @@ use App\Http\Controllers\Api\V1\Phase3\PrescriptionTemplateController;
 use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase3\QuoteRequestController;
 use App\Http\Controllers\Api\V1\Phase3\QuoteOfferController;
+use App\Http\Controllers\Api\V1\Phase4\NotificationController;
+use App\Http\Controllers\Api\V1\Phase4\VerificationDocumentController;
+use App\Http\Controllers\Api\V1\Phase4\LabResultController;
+use App\Http\Controllers\Api\V1\Phase4\PharmacyInventoryController;
+use App\Http\Controllers\Api\V1\Phase4\InvoiceController;
+use App\Http\Controllers\Api\V1\Phase4\InvoiceItemController;
+use App\Http\Controllers\Api\V1\Phase4\PaymentController;
+use App\Http\Controllers\Api\V1\Phase4\AuditLogController;
 
 Route::prefix('v1/auth')->group(function () {
     Route::prefix('patients')->group(function () {
@@ -192,5 +200,63 @@ Route::prefix('v1')->group(function () {
         Route::put('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'update']);
         Route::patch('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'update']);
         Route::delete('quote-requests/{quote_request}/offers/{offer}', [QuoteOfferController::class, 'destroy']);
+
+        // Phase 4: Notifications (user's own)
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/{notification}', [NotificationController::class, 'show']);
+        Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+
+        // Phase 4: Verification Documents
+        Route::get('verification-documents', [VerificationDocumentController::class, 'index']);
+        Route::post('verification-documents', [VerificationDocumentController::class, 'store'])->middleware('idempotent');
+        Route::get('verification-documents/{verification_document}', [VerificationDocumentController::class, 'show']);
+        Route::put('verification-documents/{verification_document}', [VerificationDocumentController::class, 'update']);
+        Route::patch('verification-documents/{verification_document}', [VerificationDocumentController::class, 'update']);
+
+        // Phase 4: Lab Results
+        Route::get('lab-results', [LabResultController::class, 'index']);
+        Route::post('lab-results', [LabResultController::class, 'store'])->middleware('idempotent');
+        Route::get('lab-results/{lab_result}', [LabResultController::class, 'show']);
+        Route::put('lab-results/{lab_result}', [LabResultController::class, 'update']);
+        Route::patch('lab-results/{lab_result}', [LabResultController::class, 'update']);
+        Route::post('lab-results/{lab_result}/review', [LabResultController::class, 'markAsReviewed']);
+
+        // Phase 4: Pharmacy Inventory
+        Route::get('pharmacy-inventories', [PharmacyInventoryController::class, 'index']);
+        Route::post('pharmacy-inventories', [PharmacyInventoryController::class, 'store'])->middleware('idempotent');
+        Route::get('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'show']);
+        Route::put('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);
+        Route::patch('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);
+        Route::delete('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'destroy']);
+        Route::get('pharmacy-inventories/alerts/low-stock', [PharmacyInventoryController::class, 'lowStockAlerts']);
+        Route::get('pharmacy-inventories/alerts/expired', [PharmacyInventoryController::class, 'expired']);
+
+        // Phase 4: Invoices
+        Route::get('invoices', [InvoiceController::class, 'index']);
+        Route::post('invoices', [InvoiceController::class, 'store'])->middleware('idempotent');
+        Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
+        Route::put('invoices/{invoice}', [InvoiceController::class, 'update']);
+        Route::patch('invoices/{invoice}', [InvoiceController::class, 'update']);
+        Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
+        Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send']);
+
+        // Phase 4: Invoice Items (nested under invoices)
+        Route::get('invoices/{invoice}/items', [InvoiceItemController::class, 'index']);
+        Route::post('invoices/{invoice}/items', [InvoiceItemController::class, 'store'])->middleware('idempotent');
+        Route::get('invoices/{invoice}/items/{item}', [InvoiceItemController::class, 'show']);
+        Route::delete('invoices/{invoice}/items/{item}', [InvoiceItemController::class, 'destroy']);
+
+        // Phase 4: Payments (nested under invoices)
+        Route::get('invoices/{invoice}/payments', [PaymentController::class, 'index']);
+        Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('idempotent');
+        Route::get('invoices/{invoice}/payments/{payment}', [PaymentController::class, 'show']);
+        Route::delete('invoices/{invoice}/payments/{payment}', [PaymentController::class, 'destroy']);
+
+        // Phase 4: Audit Logs (admin only - no create/delete)
+        Route::get('audit-logs', [AuditLogController::class, 'index']);
+        Route::get('audit-logs/{audit_log}', [AuditLogController::class, 'show']);
+        Route::get('audit-logs/patient/{patient_id}', [AuditLogController::class, 'patientHistory']);
     });
 });

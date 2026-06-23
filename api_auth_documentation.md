@@ -118,13 +118,40 @@ Este endpoint unifica el inicio de sesión para Doctores, Proveedores y Administ
 ## 3. Respuestas Estándar del Servidor
 
 ### A. Éxito en Autenticación (200 OK)
-Indistintamente de si es login o registro de paciente o usuario, el payload de éxito retornará el Token Bearer.
+Indistintamente de si es login o registro de paciente o usuario, el payload de éxito retornará el Token Bearer junto con información del usuario.
 
+**Respuesta Login - Usuario (Doctor/Proveedor/Admin):**
 ```json
 {
     "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc... (JWT gigante)",
     "token_type": "bearer",
-    "expires_in": 3600
+    "expires_in": 3600,
+    "user": {
+        "uuid": "abc-123-def-456",
+        "email": "doctor@email.com",
+        "full_name": "Dr. Carlos Mendoza",
+        "role": "DOCTOR",
+        "is_active": true,
+        "status": "ACTIVE",
+        "is_verified": false,
+        "pending_documents": 1
+    }
+}
+```
+
+**Respuesta Login - Paciente:**
+```json
+{
+    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc... (JWT gigante)",
+    "token_type": "bearer",
+    "expires_in": 3600,
+    "user": {
+        "uuid": "abc-123-def-456",
+        "email": "juan.perez@email.com",
+        "full_name": "Juan Pérez",
+        "is_active": true,
+        "status": "ACTIVE"
+    }
 }
 ```
 
@@ -149,17 +176,98 @@ El backend procesa la aprobación de documentos manual. Si el Frontend intenta c
 }
 ```
 
-### D. Cuenta Suspendida (401 Unauthorized)
-Si el administrador suspende a un usuario (`isActive = false`), cualquier petición subsecuente al API le revocará forzadamente su token arrojando:
+### D. Cuenta Bloqueada (401 Unauthorized)
+Si el administrador bloquea a un usuario (`isActive = false` o `status = 'BANNED'`), cualquier petición subsecuente al API le revocará forzadamente su token arrojando:
 ```json
 {
-    "message": "Cuenta suspendida."
+    "message": "Cuenta bloqueada.",
+    "status": "BANNED"
 }
+```
+
+### E. Estados de Cuenta (Account Status)
+El sistema maneja estados de cuenta para doctores, farmacias y pacientes:
+
+| Status | Descripción | Comportamiento |
+|--------|-------------|----------------|
+| `ACTIVE` | Cuenta activa normal | Acceso total sin restricciones |
+| `WARNED` | Primera advertencia | Acceso total + header `X-Account-Status: WARNED` |
+| `SUSPENDED` | Cuenta suspendida | Acceso total + header `X-Account-Status: SUSPENDED` |
+| `BANNED` | Cuenta bloqueada | Token invalidado, acceso denegado (401) |
+
+**Uso del Header X-Account-Status:**
+Cuando el status es `WARNED` o `SUSPENDED`, el frontend debe mostrar una alerta al usuario pero permitirle continuar usando la aplicación. El header viene en la respuesta HTTP:
+```http
+X-Account-Status: WARNED
+```
+
+**Casos de uso:**
+- `WARNED`: Paciente que faltó a citas sin cancelar, doctor con quejas menores
+- `SUSPENDED`: Paciente reincidente que falta a citas, proveedor con problemas de verificación
+- `BANNED`: Comportamiento fraudulento, abuso del sistema, o decisión administrativa definitiva
+
+---
+
+## 4. Contratos de Respuesta (TypeScript)
+
+### A. Login - Usuario (Doctor/Proveedor/Admin)
+
+```typescript
+// Response
+{
+  access_token: string;
+  token_type: "bearer";
+  expires_in: number;
+  user: UserProfile;
+}
+
+// UserProfile
+interface UserProfile {
+  uuid: string;
+  email: string;
+  full_name: string;
+  role: "DOCTOR" | "PROVIDER" | "ADMIN";
+  is_active: boolean;
+  status: "ACTIVE" | "WARNED" | "SUSPENDED" | "BANNED";
+  is_verified: boolean;
+  pending_documents: number;
+}
+```
+
+### B. Login - Paciente
+
+```typescript
+// Response
+{
+  access_token: string;
+  token_type: "bearer";
+  expires_in: number;
+  user: PatientProfile;
+}
+
+// PatientProfile
+interface PatientProfile {
+  uuid: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  status: "ACTIVE" | "WARNED" | "SUSPENDED" | "BANNED";
+}
+```
+
+### C. Enums Relacionados
+
+```typescript
+// AccountStatus - Estados de cuenta para todos los usuarios
+type AccountStatus = "ACTIVE" | "WARNED" | "SUSPENDED" | "BANNED";
+
+// UserRole - Roles de usuario (solo para user_api)
+type UserRole = "DOCTOR" | "PROVIDER" | "ADMIN";
 ```
 
 ---
 
-## 4. Endpoints Adicionales Compartidos
+## 5. Endpoints Adicionales Compartidos
 Ambos ecosistemas (Patients y Users) comparten las rutas de cierre de sesión y actualización de Token bajo sus respectivos prefijos `v1/auth/patients/` o `v1/auth/users/`.
 * `POST /logout`: Invalida el token actual en el servidor.
 * `POST /refresh`: Genera y retorna un nuevo JWT extendiendo la vida útil de la sesión sin pedir credenciales.

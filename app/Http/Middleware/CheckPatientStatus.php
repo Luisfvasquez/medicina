@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckUserStatus
+class CheckPatientStatus
 {
     /**
      * Handle an incoming request.
@@ -15,15 +15,15 @@ class CheckUserStatus
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = auth('user_api')->user();
+        $patient = auth('patient_api')->user();
 
-        if (!$user) {
+        if (!$patient) {
             return $next($request);
         }
 
         // Bloqueo total: is_active = false o status = BANNED
-        if (!$user->is_active || $user->status->value === 'BANNED') {
-            auth('user_api')->logout();
+        if (!$patient->is_active || $patient->status->value === 'BANNED') {
+            auth('patient_api')->logout();
             return response()->json([
                 'message' => 'Cuenta bloqueada.',
                 'status' => 'BANNED'
@@ -31,10 +31,9 @@ class CheckUserStatus
         }
 
         // Alerta: status = SUSPENDED o WARNED
-        if (in_array($user->status->value, ['SUSPENDED', 'WARNED'])) {
-            // Permitir acceso pero con header de advertencia
+        if (in_array($patient->status->value, ['SUSPENDED', 'WARNED'])) {
             return $next($request)->withHeaders([
-                'X-Account-Status' => $user->status->value,
+                'X-Account-Status' => $patient->status->value,
             ]);
         }
 

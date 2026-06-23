@@ -105,10 +105,19 @@ class PatientAuthController extends Controller
      */
     protected function respondWithToken($token): JsonResponse
     {
+        $patient = auth('patient_api')->user();
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth('patient_api')->factory()->getTTL() * 60
+            'expires_in' => auth('patient_api')->factory()->getTTL() * 60,
+            'user' => [
+                'uuid' => $patient->uuid,
+                'email' => $patient->email,
+                'full_name' => $patient->full_name,
+                'is_active' => $patient->is_active,
+                'status' => $patient->status->value,
+            ]
         ]);
     }
 }

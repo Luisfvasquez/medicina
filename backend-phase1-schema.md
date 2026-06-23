@@ -30,17 +30,22 @@ CREATE TABLE "City" (
 );
 
 -- 2. GLOBAL PATIENT IDENTITY
+CREATE TYPE "AccountStatus" AS ENUM ('ACTIVE', 'WARNED', 'SUSPENDED', 'BANNED');
+
 CREATE TABLE "PatientAccount" (
     "id" UUID PRIMARY KEY,
     "phone" VARCHAR NOT NULL UNIQUE,
     "email" VARCHAR UNIQUE,
-    "passwordHash" VARCHAR, 
+    "passwordHash" VARCHAR,
     "fullName" VARCHAR NOT NULL,
     "avatarUrl" VARCHAR,
     "nationalId" VARCHAR UNIQUE,
     "username" VARCHAR UNIQUE,
     "cityId" UUID REFERENCES "City"("id"),
-    "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "status" "AccountStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- 3. USERS (DOCTORS, ADMINS, PROVIDER OWNERS)
@@ -55,6 +60,7 @@ CREATE TABLE "User" (
     "phone" VARCHAR,
     "role" "UserRole" NOT NULL DEFAULT 'DOCTOR',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "status" "AccountStatus" NOT NULL DEFAULT 'ACTIVE',
     "planType" "PlanType" NOT NULL DEFAULT 'FREE',
     "logoUrl" VARCHAR,
     "signatureUrl" VARCHAR,

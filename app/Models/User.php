@@ -19,6 +19,7 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
         'phone',
         'role',
         'is_active',
+        'status',
         'plan_type',
         'city_id',
         'logo_url',
@@ -36,6 +37,7 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
             'email_verified_at' => 'datetime',
             'password_hash' => 'hashed',
             'is_active' => 'boolean',
+            'status' => \App\Enums\AccountStatus::class,
             'role' => \App\Enums\UserRole::class,
             'plan_type' => \App\Enums\PlanType::class,
         ];

@@ -19,6 +19,8 @@ class PatientAccount extends Model implements JWTSubject
         'username',
         'city_id',
         'avatar_url',
+        'is_active',
+        'status',
     ];
 
     public function patients()
@@ -52,6 +54,14 @@ class PatientAccount extends Model implements JWTSubject
             'id' => $this->id,
             'email' => $this->email,
             'phone' => $this->phone,
+        ];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'status' => \App\Enums\AccountStatus::class,
         ];
     }
 }

@@ -141,10 +141,22 @@ class UserAuthController extends Controller
 
     protected function respondWithToken($token): JsonResponse
     {
+        $user = auth('user_api')->user();
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth('user_api')->factory()->getTTL() * 60
+            'expires_in' => auth('user_api')->factory()->getTTL() * 60,
+            'user' => [
+                'uuid' => $user->uuid,
+                'email' => $user->email,
+                'full_name' => $user->full_name,
+                'role' => $user->role->value,
+                'is_active' => $user->is_active,
+                'status' => $user->status->value,
+                'is_verified' => $user->verificationDocuments()->where('status', 'APPROVED')->exists(),
+                'pending_documents' => $user->verificationDocuments()->where('status', 'PENDING')->count(),
+            ]
         ]);
     }
 }

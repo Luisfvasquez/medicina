@@ -199,8 +199,14 @@ El API no documenta un parámetro `page_size`. Asumir que no existe y usar el de
 | `GET /medications` | `?q=parac` (búsqueda por principio activo o nombre comercial) |
 | `GET /pharmacy-inventories` | `?low_stock=true`, `?expired=true` |
 | `GET /audit-logs` | `?user_id=`, `?patient_id=`, `?action=`, `?resource_type=`, `?from=`, `?to=` |
-| `GET /invoices` | `?status=DRAFT` (asumido, no documentado explícitamente) |
+| `GET /invoices` | `?status=DRAFT`, `?clinic_branch_id=` |
 | `GET /locations/cities` | `?state_id={uuid}` (opcional, filtra por estado) |
+| `GET /appointments` | `?clinic_branch_id=` (filtra por sede) |
+| `GET /consultations` | `?clinic_branch_id=` (filtra por sede) |
+| `GET /prescriptions` | `?clinic_branch_id=` (filtra por sede) |
+| `GET /medical-documents` | `?clinic_branch_id=` (filtra por sede) |
+| `GET /lab-results` | `?clinic_branch_id=`, `?consultation_id=` |
+| `GET /follow-ups` | `?clinic_branch_id=`, `?consultation_id=` |
 
 ### 2.4 Búsqueda de medicamentos
 
@@ -209,6 +215,61 @@ GET /api/v1/medications?q=para
 ```
 
 Busca en `active_principle` Y `commercial_name`. Case-insensitive.
+
+### 2.5 Filtros por Sede (clinic_branch_id)
+
+Doctores con múltiples clínicas pueden filtrar sus datos por sede. Sin filtro = todas las sedes.
+
+**Filtro por sede:**
+```
+GET /api/v1/appointments?clinic_branch_id={uuid}
+GET /api/v1/consultations?clinic_branch_id={uuid}
+GET /api/v1/prescriptions?clinic_branch_id={uuid}
+GET /api/v1/medical-documents?clinic_branch_id={uuid}
+GET /api/v1/invoices?clinic_branch_id={uuid}
+```
+
+**Filtro por consulta (para lab-results y follow-ups):**
+```
+GET /api/v1/lab-results?consultation_id={uuid}
+GET /api/v1/lab-results?clinic_branch_id={uuid}
+GET /api/v1/follow-ups?consultation_id={uuid}
+GET /api/v1/follow-ups?clinic_branch_id={uuid}
+```
+
+**Ejemplo: Todas las citas de la Sede Norte:**
+```
+GET /api/v1/appointments?clinic_branch_id=abc-123
+```
+
+**Respuesta incluye el contexto completo:**
+```json
+{
+  "data": [{
+    "id": "...",
+    "clinic_branch_id": "abc-123",
+    "patient": { "full_name": "María García" },
+    "clinic_branch": {
+      "id": "abc-123",
+      "name": "Sede Caracas Norte"
+    }
+  }]
+}
+```
+
+**Lab-results y Follow-ups incluyen la consulta asociada:**
+```json
+{
+  "data": [{
+    "id": "...",
+    "lab_request": {
+      "consultation": {
+        "clinic_branch": { "name": "Sede Caracas Norte" }
+      }
+    }
+  }]
+}
+```
 
 ---
 

@@ -8,15 +8,20 @@ use App\Http\Requests\Api\V1\LabResult\UpdateLabResultRequest;
 use App\Models\LabResult;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class LabResultController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('user_api')->user();
+        $clinicBranchId = $request->query('clinic_branch_id');
+        $consultationId = $request->query('consultation_id');
 
-        $results = LabResult::with(['patient', 'labRequest', 'reviewedBy'])
+        $results = LabResult::with(['patient', 'labRequest.consultation.clinicBranch', 'reviewedBy'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->whereHas('patient', fn($p) => $p->where('user_id', $user->id)))
+            ->when($consultationId, fn($q) => $q->whereHas('labRequest', fn($lr) => $lr->where('consultation_id', $consultationId)))
+            ->when($clinicBranchId, fn($q) => $q->whereHas('labRequest.consultation', fn($c) => $c->where('clinic_branch_id', $clinicBranchId)))
             ->latest()
             ->paginate(20);
 

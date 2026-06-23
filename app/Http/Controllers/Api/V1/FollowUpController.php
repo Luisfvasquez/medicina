@@ -7,16 +7,21 @@ use App\Http\Requests\Api\V1\FollowUp\StoreFollowUpRequest;
 use App\Http\Requests\Api\V1\FollowUp\UpdateFollowUpRequest;
 use App\Models\FollowUp;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FollowUpController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('user_api')->user();
+        $clinicBranchId = $request->query('clinic_branch_id');
+        $consultationId = $request->query('consultation_id');
 
-        $followUps = FollowUp::with(['patient', 'user', 'consultation'])
+        $followUps = FollowUp::with(['patient', 'user', 'consultation.clinicBranch'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
             ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
+            ->when($consultationId, fn($q) => $q->where('consultation_id', $consultationId))
+            ->when($clinicBranchId, fn($q) => $q->whereHas('consultation', fn($c) => $c->where('clinic_branch_id', $clinicBranchId)))
             ->latest()
             ->paginate(20);
 

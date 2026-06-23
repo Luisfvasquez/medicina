@@ -96,6 +96,23 @@ Lista solo las notificaciones del usuario autenticado, ordenadas por fecha (más
 | `LAB_RESULT_READY` | Resultados de laboratorio disponibles |
 | `INVOICE_RECEIVED` | Nueva factura recibida |
 
+### POST /notifications/read-all
+
+Marca todas las notificaciones no leídas como leídas.
+
+**Headers:** `Authorization`, `Idempotency-Key`
+
+**Body:** `{}` (vacío, idempotent)
+
+**Respuesta 200:**
+```json
+{
+  "data": {
+    "marked_count": 12
+  }
+}
+```
+
 ### PATCH /notifications/{id}/read
 
 Marca una notificación específica como leída.
@@ -188,6 +205,37 @@ PATCH  /verification-documents/{id}           # Actualizar parcialmente
 | `PENDING` | En revisión |
 | `APPROVED` | Aprobado |
 | `REJECTED` | Rechazado (ver `comments` para razón) |
+
+### PUT /verification-documents/{id} (Admin only)
+
+Actualiza el estado y comentarios de un documento de verificación.
+
+**Headers:** `Authorization` (ADMIN)
+
+**Body:**
+```json
+{
+  "status": "APPROVED (required)",
+  "comments": "Documento verificado y aprobado (optional)"
+}
+```
+
+**Respuesta 200:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "uuid": "uuid",
+    "user_id": "uuid",
+    "type": "MEDICAL_LICENSE",
+    "file_url": "https://storage.example.com/docs/license.pdf",
+    "status": "APPROVED",
+    "comments": "Documento verificado y aprobado",
+    "created_at": "2026-06-22T10:00:00Z",
+    "updated_at": "2026-06-22T11:00:00Z"
+  }
+}
+```
 
 ### Permissions
 
@@ -561,8 +609,10 @@ Cambia estado de `DRAFT` a `SENT`.
 GET    /invoices/{invoice}/items                 # Listar items
 POST   /invoices/{invoice}/items                 # Agregar item (idempotent)
 GET    /invoices/{invoice}/items/{item}          # Ver item
-DELETE /invoices/{invoice}/items/{item}           # Eliminar item (solo si invoice DRAFT)
+DELETE /invoices/{invoice}/items/{item}          # Eliminar item (solo si invoice DRAFT)
 ```
+
+> **Nota:** Los items de factura **no tienen PUT/PATCH**. Para modificar un item existente, elimínalo (`DELETE`) y crea uno nuevo con los datos corregidos.
 
 ### POST /invoices/{invoice}/items
 
@@ -605,6 +655,8 @@ POST   /invoices/{invoice}/payments                 # Registrar pago (idempotent
 GET    /invoices/{invoice}/payments/{payment}       # Ver pago
 DELETE /invoices/{invoice}/payments/{payment}       # Eliminar pago (solo admin)
 ```
+
+> **Nota:** Los pagos **no tienen PUT/PATCH**. Para corregir un pago, elimínalo (`DELETE`) y crea uno nuevo. Solo admins pueden eliminar pagos.
 
 ### POST /invoices/{invoice}/payments
 

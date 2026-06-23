@@ -260,13 +260,15 @@ DELETE /consultations/{id}       # Eliminar
 ## Signos Vitales (Nested)
 
 ```
-GET    /consultations/{consultation}/vital-signs    # Ver
-POST   /consultations/{consultation}/vital-signs    # Crear (idempotent)
+GET    /consultations/{consultation}/vital-signs    # Obtener (recurso singular)
+POST   /consultations/{consultation}/vital-signs    # Crear/Actualizar (idempotent - upsert)
 PUT    /consultations/{consultation}/vital-signs/{id}
 PATCH  /consultations/{consultation}/vital-signs/{id}
 ```
 
-### POST /consultations/{consultation}/vital-signs
+> **Nota:** `GET /consultations/{consultation}/vital-signs` retorna **un solo objeto** (los signos vitales de esa consulta), no una lista. Si no existen, retorna 404.
+
+### POST /consultations/{consultation}/vital-signs (Upsert)
 
 **Headers:** `Authorization`, `Idempotency-Key`
 
@@ -287,7 +289,9 @@ PATCH  /consultations/{consultation}/vital-signs/{id}
 
 **Todos los campos son opcionales.**
 
-**Respuesta 201:**
+> **Upsert:** Si la consulta ya tiene signos vitales, este endpoint los actualiza. Si no existen, los crea. Esto permite hacer `POST` con idempotency para crear o actualizar de forma segura.
+
+**Respuesta 201/200:**
 ```json
 {
   "data": {
@@ -308,18 +312,22 @@ PATCH  /consultations/{consultation}/vital-signs/{id}
 }
 ```
 
+**Respuesta 200** si ya existían y fueron actualizados (idem cuando la idempotency key ya fue usada).
+
 ---
 
 ## Solicitudes de Laboratorio (Nested)
 
 ```
-GET    /consultations/{consultation}/lab-requests    # Ver
-POST   /consultations/{consultation}/lab-requests    # Crear (idempotent)
+GET    /consultations/{consultation}/lab-requests    # Obtener (recurso singular)
+POST   /consultations/{consultation}/lab-requests    # Crear/Actualizar (idempotent - upsert)
 PUT    /consultations/{consultation}/lab-requests/{id}
 PATCH  /consultations/{consultation}/lab-requests/{id}
 ```
 
-### POST /consultations/{consultation}/lab-requests
+> **Nota:** `GET /consultations/{consultation}/lab-requests` retorna **un solo objeto** (la orden de laboratorio de esa consulta), no una lista. Si no existe, retorna 404.
+
+### POST /consultations/{consultation}/lab-requests (Upsert)
 
 **Headers:** `Authorization`, `Idempotency-Key`
 
@@ -336,7 +344,9 @@ PATCH  /consultations/{consultation}/lab-requests/{id}
 }
 ```
 
-**Respuesta 201:**
+> **Upsert:** Comportamiento igual a VitalSigns — si la consulta ya tiene orden de laboratorio, se actualiza.
+
+**Respuesta 201/200:**
 ```json
 {
   "data": {

@@ -676,16 +676,12 @@ GET /api/v1/locations/cities                     — Lista ciudades
 GET /api/v1/locations/cities?state_id={uuid}   — Ciudades por estado
 ```
 
-### 10.3 Rutas que faltan por implementar (no están en api.php)
-
-Estas rutas están en la documentación de API pero **NO existen aún** en `routes/api.php`:
+### 10.3 Rutas implementadas (previas)
 
 - `GET /consultations/{id}/pdf` — Exportar consulta a PDF
 - `GET /prescriptions/{id}/pdf` — Exportar receta a PDF
 - `GET /invoices/{id}/pdf` — Exportar factura a PDF
 - `GET /medical-documents/{id}/pdf` — Exportar documento médico a PDF
-
-> **Acción requerida:** Coordinar con backend para implementar estos endpoints antes del release.
 
 ---
 
@@ -786,6 +782,5 @@ El patient portal solo permite **lectura** (no write). El paciente puede:
 - **Versión del API:** v1
 - **Versión del backend:** Phase 1-4 completo, Phase 5 completo
 - **Issues conocidos:**
-  - Endpoints de exportación PDF no implementados (consultation, prescription, invoice, document → PDF)
   - WebSockets no implementados — polling para notificaciones y cotizaciones
   - Sobrepago de facturas no validado en backend

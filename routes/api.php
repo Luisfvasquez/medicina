@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\Phase5\PatientMedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase5\PatientNotificationController;
 use App\Http\Controllers\Api\V1\Phase5\PatientPrescriptionController;
 use App\Http\Controllers\Api\V1\Phase5\PatientQuoteRequestController;
+use App\Http\Controllers\Api\V1\Phase5\PdfExportController;
 use App\Http\Controllers\Api\V1\Phase5\VerifyController;
 use App\Http\Controllers\Api\V1\SpecialtyController;
 use Illuminate\Support\Facades\Route;
@@ -266,6 +267,12 @@ Route::prefix('v1')->group(function () {
         Route::get('audit-logs', [AuditLogController::class, 'index']);
         Route::get('audit-logs/{audit_log}', [AuditLogController::class, 'show']);
         Route::get('audit-logs/patient/{patient_id}', [AuditLogController::class, 'patientHistory']);
+
+        // PDF Exports
+        Route::get('consultations/{consultation}/pdf', [PdfExportController::class, 'consultation']);
+        Route::get('prescriptions/{prescription}/pdf', [PdfExportController::class, 'prescription']);
+        Route::get('invoices/{invoice}/pdf', [PdfExportController::class, 'invoice']);
+        Route::get('medical-documents/{medical_document}/pdf', [PdfExportController::class, 'medicalDocument']);
     });
 
     // Phase 5: Patient Portal (auth:patient_api)

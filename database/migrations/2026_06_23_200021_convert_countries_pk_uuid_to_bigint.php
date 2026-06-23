@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -10,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('countries') && Schema::hasColumn('countries', 'id')) {
+            $type = strtolower(Schema::getColumnType('countries', 'id'));
+            if (str_contains($type, 'int') || $type === 'bigint') {
+                return;
+            }
+        }
+
         // Step 1: Preserve original UUID id values in a temporary column
         DB::statement('ALTER TABLE countries ADD COLUMN id_uuid_original UUID');
         DB::statement('UPDATE countries SET id_uuid_original = id');

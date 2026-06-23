@@ -8,17 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // city_id is already UUID in quote_requests - just make it NOT NULL
-        // The column exists and is uuid type, we just need to add the NOT NULL constraint
+        // city_id is BIGINT in quote_requests - make it NOT NULL
         Schema::table('quote_requests', function (Blueprint $table) {
-            $table->uuid('city_id')->nullable(false)->change();
+            $table->unsignedBigInteger('city_id')->nullable(false)->change();
         });
     }
 
     public function down(): void
     {
         Schema::table('quote_requests', function (Blueprint $table) {
-            $table->uuid('city_id')->nullable()->change();
+            $table->unsignedBigInteger('city_id')->nullable()->change();
         });
     }
 };

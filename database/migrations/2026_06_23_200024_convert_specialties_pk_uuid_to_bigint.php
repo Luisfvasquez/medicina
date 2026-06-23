@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -10,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('specialties') && Schema::hasColumn('specialties', 'id')) {
+            $type = strtolower(Schema::getColumnType('specialties', 'id'));
+            if (str_contains($type, 'int') || $type === 'bigint') {
+                return;
+            }
+        }
+
         // Tables referencing specialties.id
         $tablesWithSpecialtyFk = [
             'doctor_specialty' => ['constraint' => 'doctor_specialty_specialty_id_foreign', 'nullable' => false],

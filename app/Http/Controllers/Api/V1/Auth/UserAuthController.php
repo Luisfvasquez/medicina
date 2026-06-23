@@ -123,7 +123,7 @@ class UserAuthController extends Controller
 
     public function me(): JsonResponse
     {
-        $user = auth('user_api')->user()->load('providerProfile', 'city', 'specialties');
+        $user = auth('user_api')->user()->load('providerProfile', 'city', 'specialties', 'clinicBranchMembers.branch');
         return response()->json($user);
     }
 

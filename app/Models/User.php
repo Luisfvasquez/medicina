@@ -77,4 +77,9 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     {
         return $this->hasOne(ProviderProfile::class);
     }
+
+    public function clinicBranchMembers()
+    {
+        return $this->hasMany(ClinicBranchMember::class);
+    }
 }

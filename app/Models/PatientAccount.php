@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Traits\HasPublicUuid;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class PatientAccount extends Model implements JWTSubject
+class PatientAccount extends Authenticatable implements JWTSubject
 {
     use HasPublicUuid;
 

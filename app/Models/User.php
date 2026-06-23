@@ -84,4 +84,9 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     {
         return $this->hasMany(ClinicBranchMember::class);
     }
+
+    public function verificationDocuments()
+    {
+        return $this->hasMany(VerificationDocument::class);
+    }
 }

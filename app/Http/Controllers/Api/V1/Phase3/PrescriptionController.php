@@ -8,17 +8,20 @@ use App\Http\Requests\Api\V1\Prescription\UpdatePrescriptionRequest;
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
 class PrescriptionController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('user_api')->user();
+        $clinicBranchId = $request->query('clinic_branch_id');
 
         $prescriptions = Prescription::with(['patient', 'user', 'consultation', 'items'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
+            ->when($clinicBranchId, fn($q) => $q->where('clinic_branch_id', $clinicBranchId))
             ->latest()
             ->paginate(20);
 

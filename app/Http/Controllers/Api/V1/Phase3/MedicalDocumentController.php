@@ -7,16 +7,19 @@ use App\Http\Requests\Api\V1\MedicalDocument\StoreMedicalDocumentRequest;
 use App\Http\Requests\Api\V1\MedicalDocument\UpdateMedicalDocumentRequest;
 use App\Models\MedicalDocument;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class MedicalDocumentController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('user_api')->user();
+        $clinicBranchId = $request->query('clinic_branch_id');
 
         $documents = MedicalDocument::with(['patient', 'user'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
+            ->when($clinicBranchId, fn($q) => $q->where('clinic_branch_id', $clinicBranchId))
             ->latest()
             ->paginate(20);
 

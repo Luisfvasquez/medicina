@@ -7,16 +7,19 @@ use App\Http\Requests\Api\V1\Appointment\StoreAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('user_api')->user();
+        $clinicBranchId = $request->query('clinic_branch_id');
 
         $appointments = Appointment::with(['patient', 'doctor', 'clinicBranch'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
             ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
+            ->when($clinicBranchId, fn($q) => $q->where('clinic_branch_id', $clinicBranchId))
             ->latest()
             ->paginate(20);
 

@@ -9,17 +9,20 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('user_api')->user();
+        $clinicBranchId = $request->query('clinic_branch_id');
 
         $invoices = Invoice::with(['patient', 'user', 'clinicBranch', 'items'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
             ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
+            ->when($clinicBranchId, fn($q) => $q->where('clinic_branch_id', $clinicBranchId))
             ->latest()
             ->paginate(20);
 

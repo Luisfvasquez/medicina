@@ -9,6 +9,7 @@ class Patient extends Model
     use \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_account_id',
         'first_name',

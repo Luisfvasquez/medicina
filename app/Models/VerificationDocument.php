@@ -9,6 +9,7 @@ class VerificationDocument extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'type',
         'file_url',

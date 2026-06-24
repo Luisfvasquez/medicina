@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Prescription extends Model
 {
-    use HasPublicUuid, SoftDeletes;
+    use \App\Traits\HasPublicUuid, SoftDeletes;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_id',
         'consultation_id',

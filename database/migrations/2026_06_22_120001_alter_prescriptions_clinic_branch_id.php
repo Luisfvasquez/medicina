@@ -12,6 +12,10 @@ return new class extends Migration
         $hasClinicId = Schema::hasColumn('prescriptions', 'clinic_id');
         $hasClinicBranchId = Schema::hasColumn('prescriptions', 'clinic_branch_id');
 
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         if ($hasClinicId && !$hasClinicBranchId) {
             // Use raw SQL for reliability
             DB::statement('ALTER TABLE prescriptions DROP CONSTRAINT IF EXISTS prescriptions_clinic_id_foreign');
@@ -23,6 +27,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         $hasClinicBranchId = Schema::hasColumn('prescriptions', 'clinic_branch_id');
         $hasClinicId = Schema::hasColumn('prescriptions', 'clinic_id');
 

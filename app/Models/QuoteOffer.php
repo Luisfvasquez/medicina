@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class QuoteOffer extends Model
 {
-    use HasPublicUuid;
+    use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'quote_request_id',
         'provider_id',
         'price',

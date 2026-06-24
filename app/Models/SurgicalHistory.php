@@ -9,6 +9,7 @@ class SurgicalHistory extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'procedure',
         'date',

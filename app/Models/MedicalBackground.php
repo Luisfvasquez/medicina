@@ -9,6 +9,7 @@ class MedicalBackground extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'has_diabetes',
         'has_hypertension',

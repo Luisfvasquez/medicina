@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
-    use HasPublicUuid;
+    use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_id',
         'patient_account_id',

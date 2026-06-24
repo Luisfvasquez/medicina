@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\ObstetricHistoryController;
 use App\Http\Controllers\Api\V1\PatientFamilyHistoryController;
 use App\Http\Controllers\Api\V1\PatientSurgicalHistoryController;
 use App\Http\Controllers\Api\V1\PatientVaccinationController;
+use App\Http\Controllers\Api\V1\DocumentUploadController;
 use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase3\MedicationController;
 use App\Http\Controllers\Api\V1\Phase3\PrescriptionController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Api\V1\Phase5\PatientQuoteRequestController;
 use App\Http\Controllers\Api\V1\Phase5\PdfExportController;
 use App\Http\Controllers\Api\V1\Phase5\VerifyController;
 use App\Http\Controllers\Api\V1\SpecialtyController;
+use App\Http\Controllers\Api\V1\SyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
@@ -76,6 +78,9 @@ Route::prefix('v1')->group(function () {
     Route::get('specialties', [SpecialtyController::class, 'index']);
 
     Route::middleware('auth:user_api')->group(function () {
+        // Sync (offline-first bulk push/pull)
+        Route::post('sync', [SyncController::class, 'sync']);
+
         // Appointments - idempotent store
         Route::get('appointments', [AppointmentController::class, 'index']);
         Route::post('appointments', [AppointmentController::class, 'store'])->middleware('idempotent');
@@ -185,6 +190,9 @@ Route::prefix('v1')->group(function () {
         Route::put('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'update']);
         Route::patch('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'update']);
         Route::delete('prescription-templates/{prescription_template}', [PrescriptionTemplateController::class, 'destroy']);
+
+        // Document upload (offline-first binary upload)
+        Route::post('documents/upload', [DocumentUploadController::class, 'upload']);
 
         // Phase 3: Medical Documents
         Route::get('medical-documents', [MedicalDocumentController::class, 'index']);

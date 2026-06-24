@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class LabResult extends Model
 {
-    use HasPublicUuid;
+    use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'lab_request_id',
         'patient_id',
         'file_url',

@@ -11,6 +11,7 @@ class Notification extends Model
     use HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_account_id',
         'type',

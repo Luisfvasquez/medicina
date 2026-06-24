@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Medication extends Model
 {
-    use HasPublicUuid;
+    use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'active_principle',
         'concentration',

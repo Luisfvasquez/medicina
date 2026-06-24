@@ -9,6 +9,7 @@ class VitalSign extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'consultation_id',
         'weight',

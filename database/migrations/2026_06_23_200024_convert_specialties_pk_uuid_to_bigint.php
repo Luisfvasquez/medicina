@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         if (Schema::hasTable('specialties') && Schema::hasColumn('specialties', 'id')) {
             $type = strtolower(Schema::getColumnType('specialties', 'id'));
             if (str_contains($type, 'int') || $type === 'bigint') {

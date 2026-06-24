@@ -9,6 +9,7 @@ class FamilyHistory extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'condition',
         'relationship',

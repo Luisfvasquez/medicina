@@ -11,6 +11,7 @@ class Consultation extends Model
     use HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_id',
         'patient_account_id',

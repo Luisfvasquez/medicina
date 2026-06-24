@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DocType;
+use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 
 class MedicalDocument extends Model
@@ -10,6 +11,7 @@ class MedicalDocument extends Model
     use HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_id',
         'patient_account_id',
@@ -17,12 +19,18 @@ class MedicalDocument extends Model
         'type',
         'content',
         'public_token',
+        'pending_upload',
+        'file_path',
+        'file_type',
+        'file_size',
     ];
 
     protected function casts(): array
     {
         return [
-            'type' => DocType::class,
+            'type'           => DocType::class,
+            'pending_upload' => 'boolean',
+            'file_size'      => 'integer',
         ];
     }
 

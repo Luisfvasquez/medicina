@@ -9,6 +9,7 @@ class PrescriptionTemplate extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'title',
     ];

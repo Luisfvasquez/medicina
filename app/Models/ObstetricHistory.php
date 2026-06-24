@@ -9,6 +9,7 @@ class ObstetricHistory extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'last_period_date',
         'pregnancies',

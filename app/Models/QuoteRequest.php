@@ -9,6 +9,7 @@ class QuoteRequest extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'prescription_id',
         'patient_id',
         'city_id',

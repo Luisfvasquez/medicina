@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('clinic_branch_id')->constrained('clinic_branches')->onDelete('cascade');
+            $table->foreignId('clinic_branch_id')->nullable()->constrained('clinic_branches')->onDelete('cascade');
             
             $table->date('date');
             $table->string('time');
@@ -22,6 +22,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

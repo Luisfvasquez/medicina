@@ -9,6 +9,7 @@ class Vaccination extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'vaccine',
         'dose_number',

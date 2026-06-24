@@ -9,6 +9,7 @@ class Lifestyle extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'patient_id',
         'smoking_status',
         'alcohol_consumption',

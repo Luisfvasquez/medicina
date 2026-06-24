@@ -9,6 +9,7 @@ class LabRequest extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'consultation_id',
         'exams_list',
         'instructions',

@@ -9,6 +9,7 @@ class FollowUp extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'patient_id',
         'consultation_id',

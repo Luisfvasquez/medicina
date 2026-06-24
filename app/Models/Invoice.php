@@ -4,10 +4,11 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invoice extends Model
 {
-    use \App\Traits\HasPublicUuid;
+    use \App\Traits\HasPublicUuid, SoftDeletes;
 
     protected $fillable = [
         'uuid',

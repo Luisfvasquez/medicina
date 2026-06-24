@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Enums\DocType;
 use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MedicalDocument extends Model
 {
-    use HasPublicUuid;
+    use HasPublicUuid, SoftDeletes;
 
     protected $fillable = [
         'uuid',

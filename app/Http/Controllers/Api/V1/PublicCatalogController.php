@@ -164,6 +164,7 @@ class PublicCatalogController extends Controller
     {
         $request->validate([
             'date' => ['required', 'date', 'after_or_equal:today'],
+            'branch_id' => ['nullable', 'uuid'],
         ]);
 
         $doctor = User::where('role', 'DOCTOR')
@@ -174,15 +175,32 @@ class PublicCatalogController extends Controller
 
         $date = $request->date;
         $weekday = strtoupper(Carbon::parse($date)->format('l'));
+        $branchId = $request->branch_id;
+
+        // If branch_id provided, verify doctor works at this branch
+        if ($branchId) {
+            $worksAtBranch = \App\Models\ClinicBranchMember::where('user_id', $doctor->id)
+                ->where('clinic_branch_id', $branchId)
+                ->where('is_active', true)
+                ->exists();
+
+            if (!$worksAtBranch) {
+                return response()->json([
+                    'error' => 'Doctor does not work at this branch',
+                    'code' => 'DOCTOR_NOT_AT_BRANCH'
+                ], 422);
+            }
+        }
 
         $availabilityService = app(AvailabilityService::class);
-        $slots = $availabilityService->getAvailableSlots($doctor->id, $date);
+        $slots = $availabilityService->getAvailableSlots($doctor->id, $date, $branchId);
 
         return response()->json([
             'data' => [
                 'doctor_id' => $doctor->uuid,
                 'date' => $date,
                 'weekday' => $weekday,
+                'branch_id' => $branchId,
                 ...$slots,
             ]
         ]);

@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Enums\ExceptionType;
 use App\Enums\Weekday;
 use App\Models\Appointment;
+use App\Models\ClinicBranch;
+use App\Models\ClinicSchedule;
 use App\Models\DoctorSchedule;
 use App\Models\ScheduleException;
 use Carbon\Carbon;
@@ -114,8 +116,9 @@ class AvailabilityService
 
     /**
      * Get available slots for a doctor on a specific date.
+     * If branchId is provided, filters by the clinic's schedule as well.
      */
-    public function getAvailableSlots(int $doctorId, string $date): array
+    public function getAvailableSlots(int $doctorId, string $date, ?string $branchId = null): array
     {
         $dateCarbon = Carbon::parse($date);
         $weekday = Weekday::fromCarbon($dateCarbon);
@@ -136,7 +139,7 @@ class AvailabilityService
             ];
         }
 
-        // Get schedule
+        // Get doctor's schedule
         $schedule = DoctorSchedule::where('user_id', $doctorId)
             ->where('weekday', $weekday)
             ->where('is_active', true)
@@ -150,16 +153,54 @@ class AvailabilityService
             ];
         }
 
+        // Determine effective time range (doctor schedule + custom hours if exists)
+        $doctorStart = Carbon::parse($schedule->start_time);
+        $doctorEnd = Carbon::parse($schedule->end_time);
+
+        if ($exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS) {
+            $doctorStart = Carbon::parse($exception->custom_start_time);
+            $doctorEnd = Carbon::parse($exception->custom_end_time);
+        }
+
+        // If branch_id provided, intersect with clinic schedule
+        $clinicStart = null;
+        $clinicEnd = null;
+
+        if ($branchId) {
+            $clinicSchedule = ClinicSchedule::where('clinic_branch_id', $branchId)
+                ->where('weekday', $weekday)
+                ->where('is_active', true)
+                ->first();
+
+            if ($clinicSchedule) {
+                $clinicStart = Carbon::parse($clinicSchedule->start_time);
+                $clinicEnd = Carbon::parse($clinicSchedule->end_time);
+
+                // Intersection: latest start time, earliest end time
+                $effectiveStart = $doctorStart->max($clinicStart);
+                $effectiveEnd = $doctorEnd->min($clinicEnd);
+
+                // If no intersection, no availability
+                if ($effectiveStart->gte($effectiveEnd)) {
+                    return [
+                        'is_available' => false,
+                        'exception' => [
+                            'type' => 'CLINIC_CLOSED',
+                            'reason' => 'La clínica no está abierta en este horario',
+                        ],
+                        'slots' => [],
+                    ];
+                }
+
+                $doctorStart = $effectiveStart;
+                $doctorEnd = $effectiveEnd;
+            }
+        }
+
         // Generate time slots
         $slots = [];
-        $current = Carbon::parse($schedule->start_time);
-        $end = Carbon::parse($schedule->end_time);
-
-        // If custom hours exception exists, use those instead
-        if ($exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS) {
-            $current = Carbon::parse($exception->custom_start_time);
-            $end = Carbon::parse($exception->custom_end_time);
-        }
+        $current = $doctorStart->copy();
+        $end = $doctorEnd;
 
         while ($current->lt($end)) {
             $timeString = $current->format('H:i');
@@ -179,12 +220,8 @@ class AvailabilityService
             'is_available' => true,
             'exception' => null,
             'schedule' => [
-                'start_time' => $exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS
-                    ? $exception->custom_start_time
-                    : $schedule->start_time,
-                'end_time' => $exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS
-                    ? $exception->custom_end_time
-                    : $schedule->end_time,
+                'start_time' => $doctorStart->format('H:i'),
+                'end_time' => $doctorEnd->format('H:i'),
                 'appointment_duration' => $schedule->appointment_duration,
                 'max_per_slot' => $schedule->max_per_slot,
             ],

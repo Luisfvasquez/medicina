@@ -93,8 +93,8 @@ class PublicCatalogController extends Controller
         $query = Clinic::with([
             'branches',
             'branches.city:id,name',
-            'branches.members' => fn($q) => $q->where('is_active', true),
-            'branches.members.user:id,full_name,logo_url',
+            'branches.members' => fn($q) => $q->where('is_active', true)->whereHas('user', fn($u) => $u->where('role', 'DOCTOR')),
+            'branches.members.user:id,full_name,logo_url,role',
         ]);
 
         if ($request->filled('city_id')) {
@@ -122,9 +122,7 @@ class PublicCatalogController extends Controller
                     'id' => $b->city->id,
                     'name' => $b->city->name,
                 ] : null,
-                'doctors' => $b->members
-                    ->where('user.role', 'DOCTOR')
-                    ->map(fn($m) => [
+                'doctors' => $b->members->map(fn($m) => [
                         'id' => $m->user->uuid,
                         'full_name' => $m->user->full_name,
                         'logo_url' => $m->user->logo_url,

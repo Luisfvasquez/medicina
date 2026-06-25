@@ -22,9 +22,9 @@ class PublicCatalogController extends Controller
                 'specialties:id,name',
                 'city:id,name',
                 'clinicBranchMembers' => fn($q) => $q->where('is_active', true),
-                'clinicBranchMembers.clinicBranch:id,clinic_id,name,address',
-                'clinicBranchMembers.clinicBranch.clinic:id,name',
-                'clinicBranchMembers.clinicBranch.city:id,name',
+                'clinicBranchMembers.branch:id,clinic_id,name,address',
+                'clinicBranchMembers.branch.clinic:id,name',
+                'clinicBranchMembers.branch.city:id,name',
             ]);
 
         if ($request->filled('city_id')) {
@@ -51,17 +51,17 @@ class PublicCatalogController extends Controller
             'logo_url' => $doctor->logo_url,
             'is_verified' => true,
             'clinics' => $doctor->clinicBranchMembers
-                ->groupBy(fn($m) => $m->clinicBranch?->clinic?->uuid)
+                ->groupBy(fn($m) => $m->branch?->clinic?->uuid)
                 ->map(fn($members, $clinicUuid) => [
                     'id' => $clinicUuid,
-                    'name' => $members->first()?->clinicBranch?->clinic?->name,
+                    'name' => $members->first()?->branch?->clinic?->name,
                     'branches' => $members->map(fn($m) => [
-                        'id' => $m->clinicBranch?->uuid,
-                        'name' => $m->clinicBranch?->name,
-                        'address' => $m->clinicBranch?->address,
-                        'city' => $m->clinicBranch?->city ? [
-                            'id' => $m->clinicBranch->city->id,
-                            'name' => $m->clinicBranch->city->name,
+                        'id' => $m->branch?->uuid,
+                        'name' => $m->branch?->name,
+                        'address' => $m->branch?->address,
+                        'city' => $m->branch?->city ? [
+                            'id' => $m->branch->city->id,
+                            'name' => $m->branch->city->name,
                         ] : null,
                         'department' => $m->department,
                         'office_number' => $m->office_number,

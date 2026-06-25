@@ -391,6 +391,7 @@ class SyncService
                 $existing = $modelClass::where('uuid', $itemUuid)->first();
 
                 $data = $this->onlyFillable(new $modelClass(), $item, $fillableFields);
+                $data = $this->normalizeEnumFields($data);
                 foreach ($fkData as $col => $val) {
                     $data[$col] = $val;
                 }
@@ -642,6 +643,7 @@ class SyncService
                 $existing = $modelClass::where('uuid', $itemUuid)->first();
 
                 $data = $this->onlyFillable(new $modelClass(), $item, $fillableFields);
+                $data = $this->normalizeEnumFields($data);
                 foreach ($fkData as $col => $val) {
                     $data[$col] = $val;
                 }
@@ -994,6 +996,16 @@ class SyncService
             if (array_key_exists($key, $source)) {
                 $data[$key] = $source[$key];
             }
+        }
+        return $data;
+    }
+
+    /** Normalize enum fields to lowercase to match backend enum values. */
+    private function normalizeEnumFields(array $data): array
+    {
+        // Normalize 'status' field to lowercase if present
+        if (isset($data['status']) && is_string($data['status'])) {
+            $data['status'] = strtolower($data['status']);
         }
         return $data;
     }

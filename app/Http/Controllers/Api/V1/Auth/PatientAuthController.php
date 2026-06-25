@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\PatientRegisterRequest;
+use App\Models\Patient;
 use App\Models\PatientAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -28,7 +29,7 @@ class PatientAuthController extends Controller
      */
     public function register(PatientRegisterRequest $request): JsonResponse
     {
-        $patient = PatientAccount::create([
+        $patientAccount = PatientAccount::create([
             'full_name' => $request->full_name,
             'email' => $request->email,
             'phone' => $request->phone,
@@ -38,7 +39,17 @@ class PatientAuthController extends Controller
             'password_hash' => $request->password ? Hash::make($request->password) : null,
         ]);
 
-        $token = auth('patient_api')->login($patient);
+        // Link existing Patient records by email (family members created by doctor)
+        $unlinkedPatients = Patient::where('email', $request->email)
+            ->whereNull('patient_account_id')
+            ->get();
+
+        foreach ($unlinkedPatients as $patient) {
+            $patient->patient_account_id = $patientAccount->id;
+            $patient->save();
+        }
+
+        $token = auth('patient_api')->login($patientAccount);
 
         return $this->respondWithToken($token);
     }

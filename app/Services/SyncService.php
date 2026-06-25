@@ -72,7 +72,7 @@ class SyncService
      */
     private const ENTITY_CONFIG = [
         'patients'               => [Patient::class,             ['first_name', 'last_name', 'national_id', 'birth_date', 'gender', 'email', 'phone', 'address', 'city_id', 'blood_type', 'allergies', 'chronic_conditions', 'private_notes', 'emergency_contact_name', 'emergency_contact_phone']],
-        'appointments'           => [Appointment::class,         ['clinic_branch_id', 'date', 'time', 'type', 'status', 'notes'],                                      'patient_uuid', Patient::class],
+        'appointments'           => [Appointment::class,         ['clinic_branch_id', 'date', 'time', 'slot_time', 'type', 'status', 'notes'],                                      'patient_uuid', Patient::class],
         'consultations'          => [Consultation::class,        ['appointment_id', 'clinic_branch_id', 'form_template_id', 'date', 'status', 'reason', 'physical_exam', 'diagnosis', 'treatment_plan', 'dynamic_data'], 'patient_uuid', Patient::class],
         'medical_backgrounds'    => [MedicalBackground::class,   ['has_diabetes', 'has_hypertension', 'has_asthma', 'other_conditions', 'past_hospitalizations'],       'patient_uuid', Patient::class],
         'lifestyles'             => [Lifestyle::class,           ['smoking_status', 'alcohol_consumption', 'activity_level', 'diet_type'],                               'patient_uuid', Patient::class],
@@ -414,6 +414,8 @@ class SyncService
             'quote_requests'        => QuoteRequest::class,
             'quote_offers'          => QuoteOffer::class,
             'notifications'         => Notification::class,
+            'doctor_schedules'      => DoctorSchedule::class,
+            'schedule_exceptions'   => ScheduleException::class,
         ];
 
         foreach (self::PUSH_ENTITIES_ORDERED as $entity) {

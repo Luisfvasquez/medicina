@@ -17,6 +17,8 @@ class SyncRequest extends FormRequest
             'patients',
             'appointments',
             'consultations',
+            'doctor_schedules',
+            'schedule_exceptions',
             'medical_backgrounds',
             'lifestyles',
             'obstetric_histories',

@@ -25,13 +25,13 @@ class AvailabilityService
      *
      * @throws AvailabilityException
      */
-    public function validateAppointment(int $doctorId, string $date, string $time, ?int $excludeAppointmentId = null): bool
+    public function validateAppointment(int $doctorId, string $date, string $time, ?int $excludeAppointmentId = null, ?int $clinicBranchId = null): bool
     {
         $dateCarbon = Carbon::parse($date);
         $timeCarbon = Carbon::parse($time);
         $weekday = Weekday::fromCarbon($dateCarbon);
 
-        // 1. Check for schedule exceptions
+        // 1. Check for schedule exceptions (applies to all branches)
         $exception = ScheduleException::where('user_id', $doctorId)
             ->where('exception_date', $dateCarbon->toDateString())
             ->first();
@@ -61,17 +61,22 @@ class AvailabilityService
             }
         }
 
-        // 2. Get regular schedule for this weekday
-        $schedule = DoctorSchedule::where('user_id', $doctorId)
+        // 2. Get doctor's schedule for this weekday (optionally filtered by branch)
+        $scheduleQuery = DoctorSchedule::where('user_id', $doctorId)
             ->where('weekday', $weekday)
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
 
-        if (!$schedule) {
-            throw new AvailabilityException('El doctor no tiene horario definido para este día', self::NO_SCHEDULE_FOR_DAY);
+        if ($clinicBranchId) {
+            $scheduleQuery->where('clinic_branch_id', $clinicBranchId);
         }
 
-        // 3. Check time is within range
+        $schedule = $scheduleQuery->first();
+
+        if (!$schedule) {
+            throw new AvailabilityException('El doctor no tiene horario definido para este día en esta sucursal', self::NO_SCHEDULE_FOR_DAY);
+        }
+
+        // 3. Check time is within doctor's schedule range
         $scheduleStart = Carbon::parse($schedule->start_time);
         $scheduleEnd = Carbon::parse($schedule->end_time);
 
@@ -82,7 +87,27 @@ class AvailabilityService
             );
         }
 
-        // 4. Check slot capacity
+        // 4. If branch specified, verify it intersects with clinic's schedule
+        if ($clinicBranchId) {
+            $clinicSchedule = ClinicSchedule::where('clinic_branch_id', $clinicBranchId)
+                ->where('weekday', $weekday)
+                ->where('is_active', true)
+                ->first();
+
+            if ($clinicSchedule) {
+                $clinicStart = Carbon::parse($clinicSchedule->start_time);
+                $clinicEnd = Carbon::parse($clinicSchedule->end_time);
+
+                if ($timeCarbon->lt($clinicStart) || $timeCarbon->gte($clinicEnd)) {
+                    throw new AvailabilityException(
+                        "La clínica está cerrada en este horario ({$clinicSchedule->start_time} - {$clinicSchedule->end_time})",
+                        self::OUTSIDE_SCHEDULE_HOURS
+                    );
+                }
+            }
+        }
+
+        // 5. Check slot capacity
         return $this->checkSlotCapacity($doctorId, $dateCarbon, $timeCarbon, $schedule->max_per_slot, $excludeAppointmentId);
     }
 
@@ -116,14 +141,15 @@ class AvailabilityService
 
     /**
      * Get available slots for a doctor on a specific date.
-     * If branchId is provided, filters by the clinic's schedule as well.
+     * If branchId is provided, only returns slots for that branch.
+     * Otherwise returns all slots from all branches where the doctor works.
      */
     public function getAvailableSlots(int $doctorId, string $date, ?string $branchId = null): array
     {
         $dateCarbon = Carbon::parse($date);
         $weekday = Weekday::fromCarbon($dateCarbon);
 
-        // Check for exception first
+        // Check for exception first (applies to all branches)
         $exception = ScheduleException::where('user_id', $doctorId)
             ->where('exception_date', $dateCarbon->toDateString())
             ->first();
@@ -139,13 +165,18 @@ class AvailabilityService
             ];
         }
 
-        // Get doctor's schedule
-        $schedule = DoctorSchedule::where('user_id', $doctorId)
+        // Get doctor's schedules
+        $scheduleQuery = DoctorSchedule::where('user_id', $doctorId)
             ->where('weekday', $weekday)
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
 
-        if (!$schedule) {
+        if ($branchId) {
+            $scheduleQuery->where('clinic_branch_id', $branchId);
+        }
+
+        $schedules = $scheduleQuery->get();
+
+        if ($schedules->isEmpty()) {
             return [
                 'is_available' => false,
                 'exception' => null,
@@ -153,77 +184,90 @@ class AvailabilityService
             ];
         }
 
-        // Determine effective time range (doctor schedule + custom hours if exists)
-        $doctorStart = Carbon::parse($schedule->start_time);
-        $doctorEnd = Carbon::parse($schedule->end_time);
+        // Generate slots from all applicable schedules
+        $allSlots = [];
 
-        if ($exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS) {
-            $doctorStart = Carbon::parse($exception->custom_start_time);
-            $doctorEnd = Carbon::parse($exception->custom_end_time);
-        }
+        foreach ($schedules as $schedule) {
+            $doctorStart = Carbon::parse($schedule->start_time);
+            $doctorEnd = Carbon::parse($schedule->end_time);
 
-        // If branch_id provided, intersect with clinic schedule
-        $clinicStart = null;
-        $clinicEnd = null;
+            // If custom hours exception exists, use those instead for this schedule
+            if ($exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS) {
+                $doctorStart = Carbon::parse($exception->custom_start_time);
+                $doctorEnd = Carbon::parse($exception->custom_end_time);
+            }
 
-        if ($branchId) {
-            $clinicSchedule = ClinicSchedule::where('clinic_branch_id', $branchId)
-                ->where('weekday', $weekday)
-                ->where('is_active', true)
-                ->first();
+            // Intersect with clinic schedule if branch is specified
+            if ($branchId) {
+                $clinicSchedule = ClinicSchedule::where('clinic_branch_id', $branchId)
+                    ->where('weekday', $weekday)
+                    ->where('is_active', true)
+                    ->first();
 
-            if ($clinicSchedule) {
-                $clinicStart = Carbon::parse($clinicSchedule->start_time);
-                $clinicEnd = Carbon::parse($clinicSchedule->end_time);
+                if ($clinicSchedule) {
+                    $clinicStart = Carbon::parse($clinicSchedule->start_time);
+                    $clinicEnd = Carbon::parse($clinicSchedule->end_time);
 
-                // Intersection: latest start time, earliest end time
-                $effectiveStart = $doctorStart->max($clinicStart);
-                $effectiveEnd = $doctorEnd->min($clinicEnd);
+                    $effectiveStart = $doctorStart->max($clinicStart);
+                    $effectiveEnd = $doctorEnd->min($clinicEnd);
 
-                // If no intersection, no availability
-                if ($effectiveStart->gte($effectiveEnd)) {
-                    return [
-                        'is_available' => false,
-                        'exception' => [
-                            'type' => 'CLINIC_CLOSED',
-                            'reason' => 'La clínica no está abierta en este horario',
-                        ],
-                        'slots' => [],
-                    ];
+                    if ($effectiveStart->lt($effectiveEnd)) {
+                        $doctorStart = $effectiveStart;
+                        $doctorEnd = $effectiveEnd;
+                    } else {
+                        continue; // No intersection, skip this schedule
+                    }
                 }
+            }
 
-                $doctorStart = $effectiveStart;
-                $doctorEnd = $effectiveEnd;
+            // Generate time slots for this schedule
+            $current = $doctorStart->copy();
+            while ($current->lt($doctorEnd)) {
+                $timeString = $current->format('H:i');
+
+                $isAvailable = $this->isSlotAvailable($doctorId, $dateCarbon, $current, $schedule->max_per_slot);
+
+                $allSlots[] = [
+                    'time' => $timeString,
+                    'available' => $isAvailable,
+                    'branch_id' => $schedule->clinic_branch_id,
+                ];
+
+                $current->addMinutes($schedule->appointment_duration);
             }
         }
 
-        // Generate time slots
+        // Sort slots by time
+        usort($allSlots, fn($a, $b) => strcmp($a['time'], $b['time']));
+
+        // Remove branch_id from output (internal use only) and dedupe by time
+        $seenTimes = [];
         $slots = [];
-        $current = $doctorStart->copy();
-        $end = $doctorEnd;
-
-        while ($current->lt($end)) {
-            $timeString = $current->format('H:i');
-
-            // Check availability for this slot
-            $isAvailable = $this->isSlotAvailable($doctorId, $dateCarbon, $current, $schedule->max_per_slot);
-
-            $slots[] = [
-                'time' => $timeString,
-                'available' => $isAvailable,
-            ];
-
-            $current->addMinutes($schedule->appointment_duration);
+        foreach ($allSlots as $slot) {
+            if (!isset($seenTimes[$slot['time']])) {
+                $seenTimes[$slot['time']] = true;
+                unset($slot['branch_id']);
+                $slots[] = $slot;
+            }
         }
+
+        // Determine overall schedule window
+        $firstSchedule = $schedules->first();
+        $scheduleStart = $exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS
+            ? $exception->custom_start_time
+            : $firstSchedule->start_time;
+        $scheduleEnd = $exception && $exception->exception_type === ExceptionType::CUSTOM_HOURS
+            ? $exception->custom_end_time
+            : $firstSchedule->end_time;
 
         return [
             'is_available' => true,
             'exception' => null,
             'schedule' => [
-                'start_time' => $doctorStart->format('H:i'),
-                'end_time' => $doctorEnd->format('H:i'),
-                'appointment_duration' => $schedule->appointment_duration,
-                'max_per_slot' => $schedule->max_per_slot,
+                'start_time' => $scheduleStart,
+                'end_time' => $scheduleEnd,
+                'appointment_duration' => $firstSchedule->appointment_duration,
+                'max_per_slot' => $firstSchedule->max_per_slot,
             ],
             'slots' => $slots,
         ];

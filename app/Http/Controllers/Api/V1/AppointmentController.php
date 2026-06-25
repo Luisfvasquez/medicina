@@ -34,11 +34,15 @@ class AppointmentController extends Controller
         $doctorId = $validated['user_id'];
         $date = $validated['date'];
         $time = $validated['time'];
+        $clinicBranchId = $validated['clinic_branch_id'] ?? null;
 
-        // Validate slot availability
+        // Validate slot availability (pass branch_id if provided)
         $availabilityService = app(AvailabilityService::class);
         try {
-            $availabilityService->validateAppointment($doctorId, $date, $time);
+            $branchId = $clinicBranchId
+                ? \App\Models\ClinicBranch::where('uuid', $clinicBranchId)->first()?->id
+                : null;
+            $availabilityService->validateAppointment($doctorId, $date, $time, null, $branchId);
         } catch (AvailabilityException $e) {
             return response()->json([
                 'error' => 'Slot no disponible',
@@ -83,10 +87,13 @@ class AppointmentController extends Controller
             $doctorId = $validated['user_id'] ?? $appointment->user_id;
             $date = $validated['date'] ?? $appointment->date;
             $time = $validated['time'] ?? $appointment->time;
+            $branchId = isset($validated['clinic_branch_id'])
+                ? \App\Models\ClinicBranch::where('uuid', $validated['clinic_branch_id'])->first()?->id
+                : $appointment->clinic_branch_id;
 
             $availabilityService = app(AvailabilityService::class);
             try {
-                $availabilityService->validateAppointment($doctorId, $date, $time, $appointment->id);
+                $availabilityService->validateAppointment($doctorId, $date, $time, $appointment->id, $branchId);
             } catch (AvailabilityException $e) {
                 return response()->json([
                     'error' => 'Slot no disponible',

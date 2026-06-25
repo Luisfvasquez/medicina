@@ -13,6 +13,7 @@ class DoctorSchedule extends Model
     protected $fillable = [
         'uuid',
         'user_id',
+        'clinic_branch_id',
         'weekday',
         'start_time',
         'end_time',
@@ -34,6 +35,11 @@ class DoctorSchedule extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(ClinicBranch::class, 'clinic_branch_id');
     }
 
     public function getSlotsCountAttribute(): int

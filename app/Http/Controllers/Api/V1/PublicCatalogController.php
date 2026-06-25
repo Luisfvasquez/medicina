@@ -175,10 +175,21 @@ class PublicCatalogController extends Controller
 
         $date = $request->date;
         $weekday = strtoupper(Carbon::parse($date)->format('l'));
-        $branchId = $request->branch_id;
+        $branchUuid = $request->branch_id;
 
-        // If branch_id provided, verify doctor works at this branch
-        if ($branchId) {
+        // Resolve branch UUID to integer ID
+        $branchId = null;
+        if ($branchUuid) {
+            $branch = \App\Models\ClinicBranch::where('uuid', $branchUuid)->first();
+            if (!$branch) {
+                return response()->json([
+                    'error' => 'Branch not found',
+                    'code' => 'BRANCH_NOT_FOUND'
+                ], 404);
+            }
+            $branchId = $branch->id;
+
+            // Verify doctor works at this branch
             $worksAtBranch = \App\Models\ClinicBranchMember::where('user_id', $doctor->id)
                 ->where('clinic_branch_id', $branchId)
                 ->where('is_active', true)
@@ -200,7 +211,7 @@ class PublicCatalogController extends Controller
                 'doctor_id' => $doctor->uuid,
                 'date' => $date,
                 'weekday' => $weekday,
-                'branch_id' => $branchId,
+                'branch_id' => $branchUuid,
                 ...$slots,
             ]
         ]);

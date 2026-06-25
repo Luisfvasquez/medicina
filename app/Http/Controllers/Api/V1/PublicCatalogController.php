@@ -22,9 +22,9 @@ class PublicCatalogController extends Controller
                 'specialties:id,name',
                 'city:id,name',
                 'clinicBranchMembers' => fn($q) => $q->where('is_active', true),
-                'clinicBranchMembers.branch:id,clinic_id,name,address',
-                'clinicBranchMembers.branch.clinic:id,name',
-                'clinicBranchMembers.branch.city:id,name',
+                'clinicBranchMembers.branch',
+                'clinicBranchMembers.branch.clinic',
+                'clinicBranchMembers.branch.city',
             ]);
 
         if ($request->filled('city_id')) {

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Appointment\StoreAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentRequest;
 use App\Models\Appointment;
+use App\Services\AvailabilityException;
+use App\Services\AvailabilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -28,7 +30,27 @@ class AppointmentController extends Controller
 
     public function store(StoreAppointmentRequest $request): JsonResponse
     {
-        $appointment = Appointment::create($request->validated());
+        $validated = $request->validated();
+        $doctorId = $validated['user_id'];
+        $date = $validated['date'];
+        $time = $validated['time'];
+
+        // Validate slot availability
+        $availabilityService = app(AvailabilityService::class);
+        try {
+            $availabilityService->validateAppointment($doctorId, $date, $time);
+        } catch (AvailabilityException $e) {
+            return response()->json([
+                'error' => 'Slot no disponible',
+                'code' => $e->code,
+                'message' => $e->getMessage(),
+            ], 409);
+        }
+
+        // Normalize slot_time
+        $validated['slot_time'] = \Carbon\Carbon::parse($time)->format('H:i:s');
+
+        $appointment = Appointment::create($validated);
 
         return response()->json(['data' => $appointment->load(['patient', 'doctor', 'clinicBranch'])], 201);
     }
@@ -54,7 +76,29 @@ class AppointmentController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $appointment->update($request->validated());
+        $validated = $request->validated();
+
+        // If date/time changed, validate new slot
+        if (isset($validated['date']) || isset($validated['time'])) {
+            $doctorId = $validated['user_id'] ?? $appointment->user_id;
+            $date = $validated['date'] ?? $appointment->date;
+            $time = $validated['time'] ?? $appointment->time;
+
+            $availabilityService = app(AvailabilityService::class);
+            try {
+                $availabilityService->validateAppointment($doctorId, $date, $time, $appointment->id);
+            } catch (AvailabilityException $e) {
+                return response()->json([
+                    'error' => 'Slot no disponible',
+                    'code' => $e->code,
+                    'message' => $e->getMessage(),
+                ], 409);
+            }
+
+            $validated['slot_time'] = \Carbon\Carbon::parse($time)->format('H:i:s');
+        }
+
+        $appointment->update($validated);
 
         return response()->json(['data' => $appointment->load(['patient', 'doctor', 'clinicBranch'])]);
     }

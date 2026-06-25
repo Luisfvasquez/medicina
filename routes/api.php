@@ -40,6 +40,9 @@ use App\Http\Controllers\Api\V1\Phase5\PatientPrescriptionController;
 use App\Http\Controllers\Api\V1\Phase5\PatientQuoteRequestController;
 use App\Http\Controllers\Api\V1\Phase5\PdfExportController;
 use App\Http\Controllers\Api\V1\Phase5\VerifyController;
+use App\Http\Controllers\Api\V1\PublicCatalogController;
+use App\Http\Controllers\Api\V1\Scheduling\ScheduleController;
+use App\Http\Controllers\Api\V1\Scheduling\ClinicScheduleController;
 use App\Http\Controllers\Api\V1\SpecialtyController;
 use App\Http\Controllers\Api\V1\SyncController;
 use Illuminate\Support\Facades\Route;
@@ -77,7 +80,30 @@ Route::prefix('v1')->group(function () {
     Route::get('locations/cities', [LocationController::class, 'cities']);
     Route::get('specialties', [SpecialtyController::class, 'index']);
 
+    // Public Catalog (no auth required)
+    Route::get('public/doctors', [PublicCatalogController::class, 'doctors']);
+    Route::get('public/pharmacies', [PublicCatalogController::class, 'pharmacies']);
+    Route::get('public/clinics', [PublicCatalogController::class, 'clinics']);
+    Route::get('public/doctors/{doctor}/availability', [PublicCatalogController::class, 'doctorAvailability']);
+
     Route::middleware('auth:user_api')->group(function () {
+        // Schedules - Doctor's own schedules
+        Route::get('schedules/my', [ScheduleController::class, 'myIndex']);
+        Route::post('schedules/my', [ScheduleController::class, 'myStore']);
+        Route::put('schedules/my/{id}', [ScheduleController::class, 'myUpdate']);
+        Route::delete('schedules/my/{id}', [ScheduleController::class, 'myDestroy']);
+
+        // Schedule Exceptions
+        Route::get('schedule-exceptions/my', [ScheduleController::class, 'exceptionsIndex']);
+        Route::post('schedule-exceptions/my', [ScheduleController::class, 'exceptionsStore']);
+        Route::delete('schedule-exceptions/my/{id}', [ScheduleController::class, 'exceptionsDestroy']);
+
+        // Clinic Schedules
+        Route::get('clinic-schedules/{clinicBranch}', [ClinicScheduleController::class, 'show']);
+        Route::post('clinic-schedules/{clinicBranch}', [ClinicScheduleController::class, 'store']);
+        Route::delete('clinic-schedules/{clinicBranch}/{weekday}', [ClinicScheduleController::class, 'destroy']);
+
+        // Sync (offline-first bulk push/pull)
         // Sync (offline-first bulk push/pull)
         Route::post('sync', [SyncController::class, 'sync']);
 

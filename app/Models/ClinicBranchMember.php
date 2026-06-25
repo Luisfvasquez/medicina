@@ -9,6 +9,7 @@ class ClinicBranchMember extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'clinic_branch_id',
         'role',

@@ -9,6 +9,7 @@ class ProviderBranch extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'provider_profile_id',
         'name',
         'address',

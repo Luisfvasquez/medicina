@@ -13,6 +13,7 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     use HasFactory, Notifiable, \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
 
     protected $fillable = [
+        'uuid',
         'email',
         'password_hash',
         'full_name',

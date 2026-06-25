@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\City;
 use App\Models\ClinicBranch;
+use App\Models\ClinicSchedule;
 use App\Models\Consultation;
+use App\Models\DoctorSchedule;
 use App\Models\FamilyHistory;
 use App\Models\FollowUp;
 use App\Models\FormTemplate;
@@ -25,6 +27,7 @@ use App\Models\Prescription;
 use App\Models\PrescriptionItem;
 use App\Models\QuoteOffer;
 use App\Models\QuoteRequest;
+use App\Models\ScheduleException;
 use App\Models\Specialty;
 use App\Models\SurgicalHistory;
 use App\Models\User;
@@ -36,10 +39,12 @@ use Illuminate\Support\Facades\DB;
 class SyncService
 {
     /** Entities that are pull-only (global catalogs, no push accepted). */
-    private const PULL_ONLY_ENTITIES = ['cities', 'specialties', 'form_templates', 'clinic_branches'];
+    private const PULL_ONLY_ENTITIES = ['cities', 'specialties', 'form_templates', 'clinic_branches', 'clinic_schedules'];
 
     /** Push entities processed in topological dependency order. */
     private const PUSH_ENTITIES_ORDERED = [
+        'doctor_schedules',         // no FK dependency, doctor-owned
+        'schedule_exceptions',      // no FK dependency, doctor-owned
         'medications',              // no FK dependency
         'medical_backgrounds',      // depends on patient
         'lifestyles',               // depends on patient
@@ -88,6 +93,8 @@ class SyncService
         'quote_offers'           => [QuoteOffer::class,          ['provider_id', 'price', 'currency', 'availability', 'comments'],                                       'quote_request_uuid', QuoteRequest::class],
         'notifications'          => [Notification::class,        ['patient_account_id', 'type', 'title', 'message', 'is_read', 'link']],
         'medications'            => [Medication::class,           ['active_principle', 'concentration', 'presentation', 'administration_route', 'commercial_name', 'requires_prescription', 'contraindications', 'is_active']],
+        'doctor_schedules'       => [DoctorSchedule::class,       ['weekday', 'start_time', 'end_time', 'appointment_duration', 'max_per_slot', 'is_active']],
+        'schedule_exceptions'    => [ScheduleException::class,   ['exception_date', 'exception_type', 'custom_start_time', 'custom_end_time', 'reason']],
     ];
 
     /**
@@ -371,6 +378,7 @@ class SyncService
             'medications'      => Medication::class,
             'form_templates'   => FormTemplate::class,
             'clinic_branches'  => ClinicBranch::class,
+            'clinic_schedules' => ClinicSchedule::class,
         ];
         foreach (self::PULL_ONLY_ENTITIES as $entity) {
             $modelClass = $catalogModels[$entity];

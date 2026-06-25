@@ -9,6 +9,7 @@ class Clinic extends Model
     use \App\Traits\HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'name',
         'rif',
         'logo_url',

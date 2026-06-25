@@ -10,6 +10,7 @@ class ProviderProfile extends Model
     use HasPublicUuid;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'type',
         'commercial_name',

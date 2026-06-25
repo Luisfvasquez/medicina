@@ -66,6 +66,29 @@ class SyncService
         'notifications',            // depends on user
     ];
 
+    /** Entities that patients can push (excludes doctor-specific entities). */
+    private const PATIENT_PUSH_ENTITIES = [
+        'medications',
+        'medical_backgrounds',
+        'lifestyles',
+        'obstetric_histories',
+        'surgical_histories',
+        'family_histories',
+        'vaccinations',
+        'vital_signs',
+        'lab_requests',
+        'prescriptions',
+        'prescription_items',
+        'follow_ups',
+        'lab_results',
+        'invoices',
+        'invoice_items',
+        'payments',
+        'quote_requests',
+        'quote_offers',
+        'notifications',
+    ];
+
     /**
      * Entity configuration: model class, fillable fields (excluding FK/uuid/user_id), FK map.
      * FK map: uuid_key => class to query (null = use patient, from patient_uuid).
@@ -98,9 +121,9 @@ class SyncService
     ];
 
     /**
-     * Process a bulk sync request: push changes and pull server updates.
+     * Process a bulk sync request for doctors/providers: push changes and pull server updates.
      */
-    public function sync(array $push, ?Carbon $lastSyncTimestamp, User $user): array
+    public function syncForUser(array $push, ?Carbon $lastSyncTimestamp, User $user): array
     {
         // Initialize push results for all entity types
         $pushResults = [];
@@ -204,6 +227,367 @@ class SyncService
             'push_results'   => $pushResults,
             'pull'           => $pull,
         ];
+    }
+
+    /**
+     * Process a bulk sync request for patients: push changes and pull their own data.
+     */
+    public function syncForPatient(array $push, ?Carbon $lastSyncTimestamp, PatientAccount $patientAccount): array
+    {
+        // Find or create the Patient record for this account
+        $patient = $patientAccount->patients()->first();
+
+        // Initialize push results
+        $pushResults = [];
+        $allEntityKeys = array_merge(
+            ['patients', 'appointments', 'consultations'],
+            self::PATIENT_PUSH_ENTITIES
+        );
+        foreach ($allEntityKeys as $entity) {
+            $pushResults[$entity] = ['success' => [], 'errors' => []];
+        }
+
+        DB::transaction(function () use ($push, $patient, &$pushResults, $patientAccount) {
+            $uuidMaps = [];
+
+            // 1. Patients - patient account updates their own record
+            if ($patient) {
+                $pushResults['patients'] = $this->upsertPatientEntities(
+                    Patient::class,
+                    $push['patients'] ?? [],
+                    [],
+                    [Patient::class, ['first_name', 'last_name', 'national_id', 'birth_date', 'gender', 'email', 'phone', 'address', 'city_id', 'blood_type', 'allergies', 'chronic_conditions', 'private_notes', 'emergency_contact_name', 'emergency_contact_phone']],
+                    $patient,
+                    $patientAccount
+                );
+                $uuidMaps[Patient::class] = $this->buildPatientUuidMapFromPush($push);
+            }
+
+            // 2. Appointments (depend on patient)
+            if ($patient) {
+                $pushResults['appointments'] = $this->upsertPatientEntities(
+                    Appointment::class,
+                    $push['appointments'] ?? [],
+                    ['patient_uuid' => $uuidMaps[Patient::class] ?? []],
+                    [Appointment::class, ['clinic_branch_id', 'date', 'time', 'slot_time', 'type', 'status', 'notes']],
+                    $patient,
+                    $patientAccount
+                );
+            }
+
+            // 3. Consultations (depend on patient)
+            if ($patient) {
+                $pushResults['consultations'] = $this->upsertPatientEntities(
+                    Consultation::class,
+                    $push['consultations'] ?? [],
+                    ['patient_uuid' => $uuidMaps[Patient::class] ?? []],
+                    [Consultation::class, ['appointment_id', 'clinic_branch_id', 'form_template_id', 'date', 'status', 'reason', 'physical_exam', 'diagnosis', 'treatment_plan', 'dynamic_data']],
+                    $patient,
+                    $patientAccount
+                );
+                $uuidMaps[Consultation::class] = $this->buildModelUuidMap(Consultation::class, $push['consultations'] ?? []);
+            }
+
+            // 4. Process remaining patient entities in topological order
+            foreach (self::PATIENT_PUSH_ENTITIES as $entity) {
+                $items = $push[$entity] ?? [];
+                if (empty($items)) {
+                    continue;
+                }
+
+                // For entities that depend on Prescription, ensure the map exists
+                if (in_array($entity, ['prescription_items', 'quote_requests'], true) && ! isset($uuidMaps[Prescription::class])) {
+                    $uuidMaps[Prescription::class] = $this->buildFkMapFromPush($push, Prescription::class, 'prescription_uuid');
+                }
+                // For entities that depend on Invoice, ensure the map exists
+                if (in_array($entity, ['invoice_items', 'payments'], true) && ! isset($uuidMaps[Invoice::class])) {
+                    $uuidMaps[Invoice::class] = $this->buildFkMapFromPush($push, Invoice::class, 'invoice_uuid');
+                }
+                // For entities that depend on QuoteRequest, ensure the map exists
+                if (in_array($entity, ['quote_offers'], true) && ! isset($uuidMaps[QuoteRequest::class])) {
+                    $uuidMaps[QuoteRequest::class] = $this->buildFkMapFromPush($push, QuoteRequest::class, 'quote_request_uuid');
+                }
+                // For entities that depend on LabRequest, ensure the map exists
+                if (in_array($entity, ['lab_results'], true) && ! isset($uuidMaps[LabRequest::class])) {
+                    $uuidMaps[LabRequest::class] = $this->buildFkMapFromPush($push, LabRequest::class, 'lab_request_uuid');
+                }
+                // For entities that depend on Consultation, ensure the map exists
+                if (in_array($entity, ['vital_signs', 'lab_requests'], true) && ! isset($uuidMaps[Consultation::class])) {
+                    $uuidMaps[Consultation::class] = $this->buildFkMapFromPush($push, Consultation::class, 'consultation_uuid');
+                }
+
+                $fkMaps = $this->resolveFkMaps($entity, $uuidMaps);
+                [$modelClass, $fillable] = self::ENTITY_CONFIG[$entity];
+
+                $pushResults[$entity] = $this->upsertPatientEntities(
+                    $modelClass,
+                    $items,
+                    $fkMaps,
+                    [$modelClass, $fillable],
+                    $patient,
+                    $patientAccount
+                );
+
+                // Build UUID map for this entity so dependents can find it
+                $uuidMaps[$modelClass] = $this->buildModelUuidMap($modelClass, $items);
+            }
+        });
+
+        // Pull phase (outside transaction — read-only) - filtered by patient
+        $hasMore = false;
+        $pull    = $this->pullChangesForPatient($lastSyncTimestamp, $hasMore, $patient, $patientAccount);
+
+        return [
+            'sync_timestamp' => Carbon::now()->format('Y-m-d\TH:i:s.v\Z'),
+            'has_more'       => $hasMore,
+            'push_results'   => $pushResults,
+            'pull'           => $pull,
+        ];
+    }
+
+    /**
+     * Patient-specific entity upsert - sets patient_id instead of user_id.
+     */
+    private function upsertPatientEntities(
+        string $modelClass,
+        array $items,
+        array $fkMaps,
+        array $config,
+        ?Patient $patient,
+        PatientAccount $patientAccount
+    ): array {
+        [$_] = $config;
+        $fillableFields = $config[1] ?? [];
+        $result = ['success' => [], 'errors' => []];
+
+        // If no patient, only allow creating if this entity can create a new patient record
+        if (!$patient && $modelClass !== Patient::class) {
+            // Can't push dependent entities without a patient
+            foreach ($items as $item) {
+                $result['errors'][] = [
+                    'uuid'    => $item['uuid'] ?? 'unknown',
+                    'field'   => 'patient',
+                    'message' => 'No patient record found for this account.',
+                ];
+            }
+            return $result;
+        }
+
+        foreach ($items as $item) {
+            $itemUuid = $item['uuid'];
+
+            // Resolve all FK references
+            $fkData = [];
+            foreach ($fkMaps as $uuidField => $idMap) {
+                $uuidValue = $item[$uuidField] ?? null;
+                $idField   = $this->uuidFieldToIdField($uuidField);
+
+                if ($uuidValue && isset($idMap[$uuidValue])) {
+                    $fkData[$idField] = $idMap[$uuidValue];
+                }
+            }
+
+            try {
+                $existing = $modelClass::where('uuid', $itemUuid)->first();
+
+                $data = $this->onlyFillable(new $modelClass(), $item, $fillableFields);
+                foreach ($fkData as $col => $val) {
+                    $data[$col] = $val;
+                }
+
+                // Set patient_id for patient entities
+                if ($patient && in_array('patient_id', (new $modelClass())->getFillable())) {
+                    $data['patient_id'] = $patient->id;
+                }
+
+                if ($modelClass === Patient::class) {
+                    $data['patient_account_id'] = $patientAccount->id;
+                }
+
+                if (!$existing) {
+                    $data['uuid'] = $itemUuid;
+                    $modelClass::create($data);
+                    $result['success'][] = $itemUuid;
+                    continue;
+                }
+
+                // LWW: accept only if client timestamp is newer
+                $clientTs = Carbon::parse($item['updated_at']);
+                if ($clientTs->gt($existing->updated_at)) {
+                    $existing->update($data);
+                    $result['success'][] = $itemUuid;
+                } else {
+                    $result['errors'][] = [
+                        'uuid'    => $itemUuid,
+                        'field'   => 'updated_at',
+                        'message' => 'Server version is newer.',
+                    ];
+                }
+            } catch (\Illuminate\Database\QueryException $e) {
+                $result['errors'][] = [
+                    'uuid'    => $itemUuid,
+                    'field'   => $this->extractFkField($e),
+                    'message' => $e->getMessage(),
+                ];
+            } catch (\Throwable $e) {
+                throw $e;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Pull filtered changes for a specific patient.
+     */
+    private function pullChangesForPatient(?Carbon $lastSyncTimestamp, bool &$hasMore, ?Patient $patient, PatientAccount $patientAccount): array
+    {
+        if (!$lastSyncTimestamp) {
+            return [
+                'patients' => [],
+                'appointments' => [],
+                'consultations' => [],
+            ];
+        }
+
+        if (!$patient) {
+            return [
+                'patients' => [],
+                'appointments' => [],
+                'consultations' => [],
+            ];
+        }
+
+        $limit = 500;
+        $hasMore = false;
+        $ts = $lastSyncTimestamp->format('Y-m-d H:i:s');
+        $patientId = $patient->id;
+
+        $pull = [];
+
+        // Pull patient's own record
+        $patients = Patient::where('id', $patientId)
+            ->where('updated_at', '>', $ts)
+            ->withTrashed()
+            ->limit($limit)
+            ->get()
+            ->map(fn ($p) => $p->toArray())
+            ->toArray();
+        if (count($patients) >= $limit) {
+            $hasMore = true;
+        }
+        $pull['patients'] = $patients;
+
+        // Pull patient's appointments
+        $appointments = Appointment::where('patient_id', $patientId)
+            ->where('updated_at', '>', $ts)
+            ->with('patient')
+            ->withTrashed()
+            ->limit($limit)
+            ->get()
+            ->map(function ($a) {
+                $data = $a->toArray();
+                $data['patient_uuid'] = $a->patient->uuid ?? null;
+                return $data;
+            })
+            ->toArray();
+        if (count($appointments) >= $limit) {
+            $hasMore = true;
+        }
+        $pull['appointments'] = $appointments;
+
+        // Pull patient's consultations
+        $consultations = Consultation::where('patient_id', $patientId)
+            ->where('updated_at', '>', $ts)
+            ->with('patient')
+            ->withTrashed()
+            ->limit($limit)
+            ->get()
+            ->map(function ($c) {
+                $data = $c->toArray();
+                $data['patient_uuid'] = $c->patient->uuid ?? null;
+                return $data;
+            })
+            ->toArray();
+        if (count($consultations) >= $limit) {
+            $hasMore = true;
+        }
+        $pull['consultations'] = $consultations;
+
+        // Pull patient-accessible entities filtered by patient_id
+        $patientEntityModels = [
+            'medical_backgrounds'   => MedicalBackground::class,
+            'lifestyles'            => Lifestyle::class,
+            'obstetric_histories'   => ObstetricHistory::class,
+            'surgical_histories'    => SurgicalHistory::class,
+            'family_histories'      => FamilyHistory::class,
+            'vaccinations'          => Vaccination::class,
+            'vital_signs'           => VitalSign::class,
+            'lab_requests'          => LabRequest::class,
+            'prescriptions'         => Prescription::class,
+            'prescription_items'    => PrescriptionItem::class,
+            'follow_ups'            => FollowUp::class,
+            'lab_results'           => LabResult::class,
+            'invoices'              => Invoice::class,
+            'invoice_items'         => InvoiceItem::class,
+            'payments'              => Payment::class,
+            'quote_requests'        => QuoteRequest::class,
+            'quote_offers'          => QuoteOffer::class,
+            'notifications'         => Notification::class,
+        ];
+
+        foreach (self::PATIENT_PUSH_ENTITIES as $entity) {
+            $modelClass = $patientEntityModels[$entity] ?? null;
+            if (!$modelClass) {
+                $pull[$entity] = [];
+                continue;
+            }
+
+            $query = $modelClass::where('updated_at', '>', $ts);
+
+            // Filter by patient_id if the model has it
+            if (in_array('patient_id', (new $modelClass())->getFillable())) {
+                $query->where('patient_id', $patientId);
+            }
+
+            // Filter by patient_account_id if the model has it
+            if (in_array('patient_account_id', (new $modelClass())->getFillable())) {
+                $query->where('patient_account_id', $patientAccount->id ?? 0);
+            }
+
+            $records = $query->limit($limit)
+                ->get()
+                ->map(fn ($r) => $r->toArray())
+                ->toArray();
+            if (count($records) >= $limit) {
+                $hasMore = true;
+            }
+            $pull[$entity] = $records;
+        }
+
+        // Pull global catalogs (no filter needed)
+        $catalogModels = [
+            'cities'           => City::class,
+            'specialties'      => Specialty::class,
+            'medications'      => Medication::class,
+            'form_templates'   => FormTemplate::class,
+            'clinic_branches'  => ClinicBranch::class,
+            'clinic_schedules' => ClinicSchedule::class,
+        ];
+        foreach (self::PULL_ONLY_ENTITIES as $entity) {
+            $modelClass = $catalogModels[$entity];
+            $records = $modelClass::where('updated_at', '>', $ts)
+                ->limit($limit)
+                ->get()
+                ->map(fn ($r) => $r->toArray())
+                ->toArray();
+            if (count($records) >= $limit) {
+                $hasMore = true;
+            }
+            $pull[$entity] = $records;
+        }
+
+        return $pull;
     }
 
     // -------------------------------------------------------------------------

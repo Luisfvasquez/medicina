@@ -102,11 +102,12 @@ Route::prefix('v1')->group(function () {
         Route::get('clinic-schedules/{clinicBranch}', [ClinicScheduleController::class, 'show']);
         Route::post('clinic-schedules/{clinicBranch}', [ClinicScheduleController::class, 'store']);
         Route::delete('clinic-schedules/{clinicBranch}/{weekday}', [ClinicScheduleController::class, 'destroy']);
+    });
 
-        // Sync (offline-first bulk push/pull)
-        // Sync (offline-first bulk push/pull)
-        Route::post('sync', [SyncController::class, 'sync']);
+    // Sync (offline-first bulk push/pull) - accepts both user_api and patient_api tokens
+    Route::post('sync', [SyncController::class, 'sync']);
 
+    Route::middleware('auth:user_api')->group(function () {
         // Appointments - idempotent store
         Route::get('appointments', [AppointmentController::class, 'index']);
         Route::post('appointments', [AppointmentController::class, 'store'])->middleware('idempotent');

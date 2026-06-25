@@ -263,12 +263,30 @@ class SyncService
                 $uuidMaps[Patient::class] = $this->buildPatientUuidMapFromPush($push);
             }
 
-            // 2. Appointments (depend on patient)
+            // 2. Appointments (depend on patient and doctor)
             if ($patient) {
+                // Build doctor UUID→ID map from doctor_uuids in appointments
+                $doctorUuidMap = [];
+                foreach ($push['appointments'] ?? [] as $appt) {
+                    if (isset($appt['doctor_uuid'])) {
+                        $doctorUuidMap[] = $appt['doctor_uuid'];
+                    }
+                }
+                $doctorIdMap = [];
+                if (!empty($doctorUuidMap)) {
+                    $doctors = User::whereIn('uuid', array_unique($doctorUuidMap))->get();
+                    foreach ($doctors as $doctor) {
+                        $doctorIdMap[$doctor->uuid] = $doctor->id;
+                    }
+                }
+
                 $pushResults['appointments'] = $this->upsertPatientEntities(
                     Appointment::class,
                     $push['appointments'] ?? [],
-                    ['patient_uuid' => $uuidMaps[Patient::class] ?? []],
+                    [
+                        'patient_uuid' => $uuidMaps[Patient::class] ?? [],
+                        'doctor_uuid' => $doctorIdMap,
+                    ],
                     [Appointment::class, ['clinic_branch_id', 'date', 'time', 'slot_time', 'type', 'status', 'notes']],
                     $patient,
                     $patientAccount
@@ -399,6 +417,14 @@ class SyncService
                 // Set patient_id for patient entities
                 if ($patient && in_array('patient_id', (new $modelClass())->getFillable())) {
                     $data['patient_id'] = $patient->id;
+                }
+
+                // Special case for Appointment: doctor_uuid maps to user_id (not doctor_id)
+                if ($modelClass === Appointment::class && isset($item['doctor_uuid']) && isset($fkMaps['doctor_uuid'])) {
+                    $doctorUuid = $item['doctor_uuid'];
+                    if (isset($fkMaps['doctor_uuid'][$doctorUuid])) {
+                        $data['user_id'] = $fkMaps['doctor_uuid'][$doctorUuid];
+                    }
                 }
 
                 if ($modelClass === Patient::class) {

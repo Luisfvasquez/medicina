@@ -38,6 +38,11 @@ class PublicCatalogController extends Controller
             $query->whereHas('specialties', fn($q) => $q->where('specialty_id', $request->specialty_id));
         }
 
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('full_name', 'ILIKE', "%{$search}%");
+        }
+
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         $data = collect($paginator->items())->map(fn($doctor) => [
@@ -97,6 +102,11 @@ class PublicCatalogController extends Controller
             $query->where('city_id', $request->city_id);
         }
 
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('commercial_name', 'ILIKE', "%{$search}%");
+        }
+
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         $data = collect($paginator->items())->map(fn($pharmacy) => [
@@ -149,6 +159,11 @@ class PublicCatalogController extends Controller
 
         if ($request->filled('city_id')) {
             $query->whereHas('branches', fn($q) => $q->where('city_id', $request->city_id));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('name', 'ILIKE', "%{$search}%");
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);

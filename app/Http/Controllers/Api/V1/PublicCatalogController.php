@@ -15,6 +15,9 @@ class PublicCatalogController extends Controller
 {
     public function doctors(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->get('per_page', 15), 100);
+        $page = (int) $request->get('page', 1);
+
         $query = User::where('role', 'DOCTOR')
             ->where('is_active', true)
             ->whereHas('verificationDocuments', fn($q) => $q->where('status', 'APPROVED'))
@@ -35,9 +38,9 @@ class PublicCatalogController extends Controller
             $query->whereHas('specialties', fn($q) => $q->where('specialty_id', $request->specialty_id));
         }
 
-        $doctors = $query->get();
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $data = $doctors->map(fn($doctor) => [
+        $data = collect($paginator->items())->map(fn($doctor) => [
             'id' => $doctor->uuid,
             'full_name' => $doctor->full_name,
             'specialties' => $doctor->specialties->map(fn($s) => [
@@ -70,11 +73,22 @@ class PublicCatalogController extends Controller
                 ->values(),
         ]);
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ]);
     }
 
     public function pharmacies(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->get('per_page', 15), 100);
+        $page = (int) $request->get('page', 1);
+
         $query = ProviderProfile::where('type', 'PHARMACY')
             ->where('is_verified', true)
             ->with(['branches', 'city:id,name', 'user']);
@@ -83,9 +97,9 @@ class PublicCatalogController extends Controller
             $query->where('city_id', $request->city_id);
         }
 
-        $pharmacies = $query->get();
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $data = $pharmacies->map(fn($pharmacy) => [
+        $data = collect($paginator->items())->map(fn($pharmacy) => [
             'id' => $pharmacy->uuid,
             'commercial_name' => $pharmacy->commercial_name,
             'rif' => $pharmacy->rif,
@@ -110,11 +124,22 @@ class PublicCatalogController extends Controller
             ]),
         ]);
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ]);
     }
 
     public function clinics(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->get('per_page', 15), 100);
+        $page = (int) $request->get('page', 1);
+
         $query = Clinic::with([
             'branches',
             'branches.city:id,name',
@@ -126,9 +151,9 @@ class PublicCatalogController extends Controller
             $query->whereHas('branches', fn($q) => $q->where('city_id', $request->city_id));
         }
 
-        $clinics = $query->get();
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $data = $clinics->map(fn($clinic) => [
+        $data = collect($paginator->items())->map(fn($clinic) => [
             'id' => $clinic->uuid,
             'name' => $clinic->name,
             'rif' => $clinic->rif,
@@ -157,7 +182,15 @@ class PublicCatalogController extends Controller
             ]),
         ]);
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ]);
     }
 
     public function doctorAvailability(Request $request, string $doctorId): JsonResponse

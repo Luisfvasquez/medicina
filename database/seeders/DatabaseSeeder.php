@@ -16,8 +16,11 @@ class DatabaseSeeder extends Seeder
             SpecialtySeeder::class,
             UserSeeder::class,
             ClinicSeeder::class,
+            ClinicScheduleSeeder::class,
             FormTemplateSeeder::class,
             CatalogSeeder::class,
+            DoctorScheduleSeeder::class,
+            DoctorBranchScheduleSeeder::class,
         ]);
     }
 }

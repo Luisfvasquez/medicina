@@ -36,10 +36,13 @@ class AuthController extends Controller
         $token = auth('user_api')->login($user);
 
         return response()->json([
-            'accessToken' => $token,
-            'tokenType'   => 'bearer',
-            'expiresIn'   => (int) config('jwt.ttl') * 60,
-            'user'        => $this->authResponse->userPayload($user),
+            'accessToken'  => $token,
+            'access_token' => $token,
+            'tokenType'    => 'bearer',
+            'token_type'   => 'bearer',
+            'expiresIn'    => (int) config('jwt.ttl') * 60,
+            'expires_in'   => (int) config('jwt.ttl') * 60,
+            'user'         => $this->authResponse->userPayload($user),
         ])->withCookie($this->authResponse->authCookie($token));
     }
 

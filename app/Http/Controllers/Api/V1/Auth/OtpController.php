@@ -71,10 +71,13 @@ class OtpController extends Controller
             : $this->authResponse->userPayload($user);
 
         return response()->json([
-            'accessToken' => $token,
-            'tokenType'   => 'bearer',
-            'expiresIn'   => (int) config('jwt.ttl') * 60,
-            'user'        => $payload,
+            'accessToken'  => $token,
+            'access_token' => $token,
+            'tokenType'    => 'bearer',
+            'token_type'   => 'bearer',
+            'expiresIn'    => (int) config('jwt.ttl') * 60,
+            'expires_in'   => (int) config('jwt.ttl') * 60,
+            'user'         => $payload,
         ], 200)->withCookie($this->authResponse->authCookie($token));
     }
 

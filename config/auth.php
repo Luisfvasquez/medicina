@@ -43,11 +43,11 @@ return [
             'provider' => 'users',
         ],
         'user_api' => [
-            'driver' => 'jwt',
+            'driver' => 'cookie_jwt',
             'provider' => 'users',
         ],
         'patient_api' => [
-            'driver' => 'jwt',
+            'driver' => 'cookie_jwt',
             'provider' => 'patient_accounts',
         ],
     ],

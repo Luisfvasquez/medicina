@@ -18,7 +18,7 @@ class ProviderRegisterRequest extends FormRequest
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
-            'city_id' => 'nullable|uuid|exists:cities,id',
+            'city_id' => 'nullable|uuid|exists:cities,uuid',
             'commercial_name' => 'required|string|max:255',
             'provider_type' => 'required|in:PHARMACY,LABORATORY',
             'rif' => 'required|string|max:50|unique:provider_profiles,rif',

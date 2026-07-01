@@ -25,7 +25,14 @@ class EnsureIdempotency
 
         if (!$idempotencyKey) {
             return response()->json([
-                'error' => 'Idempotency-Key header is missing and it is strictly required.'
+                'type'     => 'https://api.pharmako.com/errors/validation',
+                'title'    => 'Error de Validación',
+                'status'   => 400,
+                'detail'   => 'El header Idempotency-Key es requerido para peticiones POST, PUT y PATCH.',
+                'instance' => '/' . $request->path(),
+                'invalidParams' => [
+                    ['name' => 'Idempotency-Key', 'reason' => 'El header es requerido.'],
+                ],
             ], 400);
         }
 

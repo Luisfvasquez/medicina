@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Enums\AccountStatus;
+use App\Exceptions\Auth\AccountBannedException;
+use App\Exceptions\Auth\AccountSuspendedException;
+use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\PatientRegisterRequest;
 use App\Models\Patient;
 use App\Models\PatientAccount;
+use App\Services\Auth\AuthResponseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class PatientAuthController extends Controller
 {
-    /**
-     * Create a new AuthController instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        // En Laravel 11 los middlewares se pueden definir en las rutas, pero también se pueden usar de la forma tradicional o mediante el método middleware de la clase Route.
-    }
+    public function __construct(
+        private AuthResponseService $authResponse,
+    ) {}
 
     /**
      * Register a Patient
@@ -29,13 +29,19 @@ class PatientAuthController extends Controller
      */
     public function register(PatientRegisterRequest $request): JsonResponse
     {
+        $cityId = null;
+        if ($request->city_id) {
+            $city = \App\Models\City::where('uuid', $request->city_id)->first();
+            $cityId = $city?->id;
+        }
+
         $patientAccount = PatientAccount::create([
             'full_name' => $request->full_name,
             'email' => $request->email,
             'phone' => $request->phone,
             'national_id' => $request->national_id,
             'username' => $request->username,
-            'city_id' => $request->city_id,
+            'city_id' => $cityId,
             'password_hash' => $request->password ? Hash::make($request->password) : null,
         ]);
 
@@ -49,9 +55,11 @@ class PatientAuthController extends Controller
             $patient->save();
         }
 
-        $token = auth('patient_api')->login($patientAccount);
+        $token = JWTAuth::fromUser($patientAccount);
 
-        return $this->respondWithToken($token);
+        return response()->json([
+            'user' => $this->authResponse->patientPayload($patientAccount),
+        ])->withCookie($this->authResponse->authCookie($token));
     }
 
     /**
@@ -61,74 +69,59 @@ class PatientAuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = request(['email', 'password']);
-        
-        // El framework internamente validará password_hash debido a que renombramos la columna en AuthPasswordName o debemos pasar el array con password_hash si el framework no lo mapea.
-        // Como 'password_hash' es la columna, es mejor asegurarnos de usar Auth::guard('patient_api')->attempt() si renombramos getAuthPasswordName().
-        // JWT Auth y EloquentUserProvider intentarán encontrar la password usando getAuthPassword().
+        $patient = PatientAccount::where('email', $request->email)->first();
 
-        if (! $token = auth('patient_api')->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (!$patient || !Hash::check($request->password, $patient->password_hash)) {
+            throw new InvalidCredentialsException();
         }
 
-        return $this->respondWithToken($token);
-    }
+        $this->checkAccountStatus($patient);
 
-    /**
-     * Get the authenticated User.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function me(): JsonResponse
-    {
-        $patient = auth('patient_api')->user()->load('city', 'patients');
-        return response()->json($patient);
-    }
-
-    /**
-     * Log the user out (Invalidate the token).
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function logout(): JsonResponse
-    {
-        auth('patient_api')->logout();
-
-        return response()->json(['message' => 'Successfully logged out']);
-    }
-
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function refresh(): JsonResponse
-    {
-        return $this->respondWithToken(auth('patient_api')->refresh());
-    }
-
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function respondWithToken($token): JsonResponse
-    {
-        $patient = auth('patient_api')->user();
+        $token = JWTAuth::fromUser($patient);
 
         return response()->json([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth('patient_api')->factory()->getTTL() * 60,
-            'user' => [
-                'uuid' => $patient->uuid,
-                'email' => $patient->email,
-                'full_name' => $patient->full_name,
-                'is_active' => $patient->is_active,
-                'status' => $patient->status->value,
-            ]
+            'user' => $this->authResponse->patientPayload($patient),
+        ])->withCookie($this->authResponse->authCookie($token));
+    }
+
+    public function me(): JsonResponse
+    {
+        $patient = JWTAuth::parseToken()->authenticate();
+
+        return response()->json([
+            'user' => $this->authResponse->patientPayload($patient),
         ]);
+    }
+
+    public function logout(): JsonResponse
+    {
+        JWTAuth::parseToken()->invalidate();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Sesión cerrada correctamente.',
+        ])->withCookie($this->authResponse->clearCookie());
+    }
+
+    public function refresh(): JsonResponse
+    {
+        $token = JWTAuth::parseToken()->refresh();
+
+        return response()->json([
+            'user' => $this->authResponse->patientPayload(JWTAuth::setToken($token)->toUser()),
+        ])->withCookie($this->authResponse->authCookie($token));
+    }
+
+    private function checkAccountStatus(PatientAccount $patient): void
+    {
+        match ($patient->status) {
+            AccountStatus::SUSPENDED => throw new AccountSuspendedException(
+                detail: 'Su cuenta ha sido suspendida. Contacte al administrador.'
+            ),
+            AccountStatus::BANNED => throw new AccountBannedException(
+                detail: 'Su cuenta ha sido baneada.'
+            ),
+            default => null,
+        };
     }
 }

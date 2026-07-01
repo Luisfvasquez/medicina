@@ -2,30 +2,40 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Enums\AccountStatus;
+use App\Exceptions\Auth\AccountBannedException;
+use App\Exceptions\Auth\AccountSuspendedException;
+use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\DoctorRegisterRequest;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ProviderRegisterRequest;
-use App\Models\User;
 use App\Models\City;
-use App\Models\Specialty;
 use App\Models\ProviderProfile;
+use App\Models\Specialty;
+use App\Models\User;
 use App\Models\VerificationDocument;
+use App\Services\Auth\AuthResponseService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserAuthController extends Controller
 {
+    public function __construct(
+        private AuthResponseService $authResponse,
+    ) {}
+
     public function registerDoctor(DoctorRegisterRequest $request): JsonResponse
     {
         try {
             DB::beginTransaction();
 
-            // Convert city_uuid to city_id (BIGINT)
+            // Convert city_id (UUID) to city_id (BIGINT)
             $cityId = null;
-            if ($request->city_uuid) {
-                $city = City::where('uuid', $request->city_uuid)->first();
+            if ($request->city_id) {
+                $city = City::where('uuid', $request->city_id)->first();
                 $cityId = $city?->id;
             }
 
@@ -57,8 +67,11 @@ class UserAuthController extends Controller
 
             DB::commit();
 
-            $token = auth('user_api')->login($user);
-            return $this->respondWithToken($token);
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'user' => $this->authResponse->userPayload($user),
+            ])->withCookie($this->authResponse->authCookie($token));
             
         } catch (\Exception $e) {
             DB::rollBack();
@@ -71,6 +84,13 @@ class UserAuthController extends Controller
         try {
             DB::beginTransaction();
 
+            // Convert city_id (UUID) to city_id (BIGINT)
+            $cityId = null;
+            if ($request->city_id) {
+                $city = City::where('uuid', $request->city_id)->first();
+                $cityId = $city?->id;
+            }
+
             $user = User::create([
                 'full_name' => $request->full_name,
                 'email' => $request->email,
@@ -79,7 +99,7 @@ class UserAuthController extends Controller
                 'role' => 'PROVIDER',
                 'is_active' => true,
                 'plan_type' => 'FREE',
-                'city_id' => $request->city_id,
+                'city_id' => $cityId,
             ]);
 
             ProviderProfile::create([
@@ -101,8 +121,11 @@ class UserAuthController extends Controller
 
             DB::commit();
 
-            $token = auth('user_api')->login($user);
-            return $this->respondWithToken($token);
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'user' => $this->authResponse->userPayload($user),
+            ])->withCookie($this->authResponse->authCookie($token));
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -112,51 +135,55 @@ class UserAuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = request(['email', 'password']);
+        $user = User::where('email', $request->email)->first();
 
-        if (! $token = auth('user_api')->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (!$user || !Hash::check($request->password, $user->password_hash)) {
+            throw new InvalidCredentialsException();
         }
 
-        return $this->respondWithToken($token);
+        $this->checkAccountStatus($user);
+
+        $token = JWTAuth::fromUser($user);
+
+        return response()->json([
+            'user' => $this->authResponse->userPayload($user),
+        ])->withCookie($this->authResponse->authCookie($token));
     }
 
     public function me(): JsonResponse
     {
-        $user = auth('user_api')->user()->load('providerProfile', 'city', 'specialties', 'clinicBranchMembers.branch');
-        return response()->json($user);
+        $user = JWTAuth::parseToken()->authenticate();
+
+        return response()->json([
+            'user' => $this->authResponse->userPayload($user),
+        ]);
     }
 
     public function logout(): JsonResponse
     {
-        auth('user_api')->logout();
+        JWTAuth::parseToken()->invalidate();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Sesión cerrada correctamente.',
+        ])->withCookie($this->authResponse->clearCookie());
     }
 
     public function refresh(): JsonResponse
     {
-        return $this->respondWithToken(auth('user_api')->refresh());
-    }
-
-    protected function respondWithToken($token): JsonResponse
-    {
-        $user = auth('user_api')->user();
+        $token = JWTAuth::parseToken()->refresh();
 
         return response()->json([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth('user_api')->factory()->getTTL() * 60,
-            'user' => [
-                'uuid' => $user->uuid,
-                'email' => $user->email,
-                'full_name' => $user->full_name,
-                'role' => $user->role->value,
-                'is_active' => $user->is_active,
-                'status' => $user->status->value,
-                'is_verified' => $user->verificationDocuments()->where('status', 'APPROVED')->exists(),
-                'pending_documents' => $user->verificationDocuments()->where('status', 'PENDING')->count(),
-            ]
-        ]);
+            'user' => $this->authResponse->userPayload(JWTAuth::setToken($token)->toUser()),
+        ])->withCookie($this->authResponse->authCookie($token));
+    }
+
+    private function checkAccountStatus(User $user): void
+    {
+        match ($user->status) {
+            AccountStatus::SUSPENDED => throw new AccountSuspendedException(),
+            AccountStatus::BANNED    => throw new AccountBannedException(),
+            default => null,
+        };
     }
 }

@@ -20,7 +20,7 @@ class PatientRegisterRequest extends FormRequest
             'password' => 'nullable|string|min:8',
             'national_id' => 'nullable|string|max:50|unique:patient_accounts,national_id',
             'username' => 'nullable|string|max:50|unique:patient_accounts,username',
-            'city_id' => 'nullable|uuid|exists:cities,id',
+            'city_id' => 'nullable|uuid|exists:cities,uuid',
         ];
     }
 }

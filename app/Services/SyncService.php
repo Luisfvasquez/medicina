@@ -1026,12 +1026,12 @@ class SyncService
         return $data;
     }
 
-    /** Normalize enum fields to lowercase to match backend enum values. */
+    /** Normalize enum fields to uppercase to match backend enum values. */
     private function normalizeEnumFields(array $data): array
     {
-        // Normalize 'status' field to lowercase if present
+        // Normalize 'status' field to uppercase if present
         if (isset($data['status']) && is_string($data['status'])) {
-            $data['status'] = strtolower($data['status']);
+            $data['status'] = strtoupper($data['status']);
         }
         return $data;
     }

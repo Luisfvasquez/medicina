@@ -8,7 +8,7 @@ class SyncRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth('user_api')->check() || auth('patient_api')->check();
+        return true;
     }
 
     public function rules(): array

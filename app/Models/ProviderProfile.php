@@ -20,6 +20,8 @@ class ProviderProfile extends Model
         'phone',
         'is_open',
         'is_verified',
+        'google_maps_url',
+        'observations',
     ];
 
     protected function casts(): array

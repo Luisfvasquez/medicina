@@ -32,18 +32,18 @@ class UserAuthController extends Controller
         try {
             DB::beginTransaction();
 
-            // Convert city_id (UUID) to city_id (BIGINT)
+            // Convert cityId (UUID) to city_id (BIGINT)
             $cityId = null;
-            if ($request->city_id) {
-                $city = City::where('uuid', $request->city_id)->first();
+            if ($request->cityId) {
+                $city = City::where('uuid', $request->cityId)->first();
                 $cityId = $city?->id;
             }
 
-            // Convert specialty_ids to database BIGINT ids
-            $specialtyIds = Specialty::whereIn('uuid', $request->specialty_ids)->pluck('id')->toArray();
+            // Convert specialtyIds to database BIGINT ids
+            $specialtyIds = Specialty::whereIn('uuid', $request->specialtyIds)->pluck('id')->toArray();
 
             $user = User::create([
-                'full_name' => $request->full_name,
+                'full_name' => $request->fullName,
                 'email' => $request->email,
                 'password_hash' => Hash::make($request->password),
                 'phone' => $request->phone,
@@ -55,8 +55,34 @@ class UserAuthController extends Controller
 
             $user->specialties()->attach($specialtyIds);
 
+            // Auto-create personal clinic and main branch for independent practice
+            $clinic = \App\Models\Clinic::create([
+                'name' => 'Consultorio Privado de ' . $user->full_name,
+                'rif' => null,
+                'logo_url' => null,
+                'website' => null,
+            ]);
+
+            $branch = \App\Models\ClinicBranch::create([
+                'clinic_id' => $clinic->id,
+                'name' => 'Consultorio Principal',
+                'address' => 'Dirección a completar',
+                'city_id' => $cityId ?? (\App\Models\City::first()?->id ?? 1),
+                'phone' => $user->phone ?? '0000000000',
+                'is_main_branch' => true,
+                'google_maps_url' => null,
+                'observations' => null,
+            ]);
+
+            \App\Models\ClinicBranchMember::create([
+                'user_id' => $user->id,
+                'clinic_branch_id' => $branch->id,
+                'role' => \App\Enums\ClinicRole::OWNER,
+                'is_active' => true,
+            ]);
+
             // Manejo de archivo omitido en esta fase inicial, se guardaría en storage real.
-            $path = $request->file('medical_license')->store('licenses', 'local');
+            $path = $request->file('medicalLicense')->store('licenses', 'local');
 
             VerificationDocument::create([
                 'user_id' => $user->id,
@@ -90,15 +116,15 @@ class UserAuthController extends Controller
         try {
             DB::beginTransaction();
 
-            // Convert city_id (UUID) to city_id (BIGINT)
+            // Convert cityId (UUID) to city_id (BIGINT)
             $cityId = null;
-            if ($request->city_id) {
-                $city = City::where('uuid', $request->city_id)->first();
+            if ($request->cityId) {
+                $city = City::where('uuid', $request->cityId)->first();
                 $cityId = $city?->id;
             }
 
             $user = User::create([
-                'full_name' => $request->full_name,
+                'full_name' => $request->fullName,
                 'email' => $request->email,
                 'password_hash' => Hash::make($request->password),
                 'phone' => $request->phone,
@@ -110,13 +136,13 @@ class UserAuthController extends Controller
 
             ProviderProfile::create([
                 'user_id' => $user->id,
-                'commercial_name' => $request->commercial_name,
-                'type' => $request->provider_type,
+                'commercial_name' => $request->commercialName,
+                'type' => $request->providerType,
                 'rif' => $request->rif,
                 'is_verified' => false,
             ]);
 
-            $path = $request->file('business_document')->store('business_docs', 'local');
+            $path = $request->file('businessDocument')->store('business_docs', 'local');
 
             VerificationDocument::create([
                 'user_id' => $user->id,

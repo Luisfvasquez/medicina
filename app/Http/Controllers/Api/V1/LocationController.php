@@ -15,14 +15,14 @@ class LocationController extends Controller
         return response()->json([
             'data' => $cities->map(function ($city) {
                 return [
-                    'id' => $city->id,
+                    'id' => $city->uuid,
                     'name' => $city->name,
                     'state' => [
-                        'id' => $city->state->id,
+                        'id' => $city->state->uuid,
                         'name' => $city->state->name,
                     ],
                     'country' => [
-                        'id' => $city->state->country->id,
+                        'id' => $city->state->country->uuid,
                         'name' => $city->state->country->name,
                         'code' => $city->state->country->code,
                     ]

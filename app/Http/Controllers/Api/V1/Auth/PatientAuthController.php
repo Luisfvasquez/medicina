@@ -58,7 +58,13 @@ class PatientAuthController extends Controller
         $token = JWTAuth::fromUser($patientAccount);
 
         return response()->json([
-            'user' => $this->authResponse->patientPayload($patientAccount),
+            'accessToken'  => $token,
+            'access_token' => $token,
+            'tokenType'    => 'bearer',
+            'token_type'   => 'bearer',
+            'expiresIn'    => (int) config('jwt.ttl') * 60,
+            'expires_in'   => (int) config('jwt.ttl') * 60,
+            'user'         => $this->authResponse->patientPayload($patientAccount),
         ])->withCookie($this->authResponse->authCookie($token));
     }
 
@@ -80,7 +86,13 @@ class PatientAuthController extends Controller
         $token = JWTAuth::fromUser($patient);
 
         return response()->json([
-            'user' => $this->authResponse->patientPayload($patient),
+            'accessToken'  => $token,
+            'access_token' => $token,
+            'tokenType'    => 'bearer',
+            'token_type'   => 'bearer',
+            'expiresIn'    => (int) config('jwt.ttl') * 60,
+            'expires_in'   => (int) config('jwt.ttl') * 60,
+            'user'         => $this->authResponse->patientPayload($patient),
         ])->withCookie($this->authResponse->authCookie($token));
     }
 
@@ -108,7 +120,13 @@ class PatientAuthController extends Controller
         $token = JWTAuth::parseToken()->refresh();
 
         return response()->json([
-            'user' => $this->authResponse->patientPayload(JWTAuth::setToken($token)->toUser()),
+            'accessToken'  => $token,
+            'access_token' => $token,
+            'tokenType'    => 'bearer',
+            'token_type'   => 'bearer',
+            'expiresIn'    => (int) config('jwt.ttl') * 60,
+            'expires_in'   => (int) config('jwt.ttl') * 60,
+            'user'         => $this->authResponse->patientPayload(JWTAuth::setToken($token)->toUser()),
         ])->withCookie($this->authResponse->authCookie($token));
     }
 

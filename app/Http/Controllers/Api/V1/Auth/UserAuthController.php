@@ -39,8 +39,8 @@ class UserAuthController extends Controller
                 $cityId = $city?->id;
             }
 
-            // Convert specialty_uuids to specialty_ids (BIGINT array)
-            $specialtyIds = Specialty::whereIn('uuid', $request->specialty_uuids)->pluck('id')->toArray();
+            // Convert specialty_ids to database BIGINT ids
+            $specialtyIds = Specialty::whereIn('uuid', $request->specialty_ids)->pluck('id')->toArray();
 
             $user = User::create([
                 'full_name' => $request->full_name,
@@ -70,7 +70,13 @@ class UserAuthController extends Controller
             $token = JWTAuth::fromUser($user);
 
             return response()->json([
-                'user' => $this->authResponse->userPayload($user),
+                'accessToken'  => $token,
+                'access_token' => $token,
+                'tokenType'    => 'bearer',
+                'token_type'   => 'bearer',
+                'expiresIn'    => (int) config('jwt.ttl') * 60,
+                'expires_in'   => (int) config('jwt.ttl') * 60,
+                'user'         => $this->authResponse->userPayload($user),
             ])->withCookie($this->authResponse->authCookie($token));
             
         } catch (\Exception $e) {
@@ -124,7 +130,13 @@ class UserAuthController extends Controller
             $token = JWTAuth::fromUser($user);
 
             return response()->json([
-                'user' => $this->authResponse->userPayload($user),
+                'accessToken'  => $token,
+                'access_token' => $token,
+                'tokenType'    => 'bearer',
+                'token_type'   => 'bearer',
+                'expiresIn'    => (int) config('jwt.ttl') * 60,
+                'expires_in'   => (int) config('jwt.ttl') * 60,
+                'user'         => $this->authResponse->userPayload($user),
             ])->withCookie($this->authResponse->authCookie($token));
 
         } catch (\Exception $e) {

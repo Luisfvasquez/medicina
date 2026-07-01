@@ -19,8 +19,8 @@ class DoctorRegisterRequest extends FormRequest
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
             'city_id' => 'nullable|uuid|exists:cities,uuid',
-            'specialty_uuids' => 'required|array|min:1',
-            'specialty_uuids.*' => 'uuid|exists:specialties,uuid',
+            'specialty_ids' => 'required|array|min:1',
+            'specialty_ids.*' => 'uuid|exists:specialties,uuid',
             'medical_license' => 'required|file|mimes:pdf,jpg,png|max:10240',
         ];
     }

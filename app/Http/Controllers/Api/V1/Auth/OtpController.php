@@ -70,8 +70,12 @@ class OtpController extends Controller
             ? $this->authResponse->patientPayload($user)
             : $this->authResponse->userPayload($user);
 
-        return response()->json(['user' => $payload], 200)
-            ->withCookie($this->authResponse->authCookie($token));
+        return response()->json([
+            'accessToken' => $token,
+            'tokenType'   => 'bearer',
+            'expiresIn'   => (int) config('jwt.ttl') * 60,
+            'user'        => $payload,
+        ], 200)->withCookie($this->authResponse->authCookie($token));
     }
 
     private function resolveUser(\App\Models\OtpCode $otp): User|PatientAccount

@@ -110,7 +110,14 @@ class OtpController extends Controller
             ->orWhere('email', $identifier)
             ->first();
 
-        return $user?->role ?? 'DOCTOR';
+        if (!$user) {
+            return 'DOCTOR';
+        }
+
+        // $user->role puede ser un BackedEnum (UserRole) o un string según el cast del modelo
+        return $user->role instanceof \BackedEnum
+            ? $user->role->value
+            : (string) $user->role;
     }
 
     private function resolveUser(\App\Models\OtpCode $otp): User|PatientAccount

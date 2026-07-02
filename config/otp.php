@@ -13,7 +13,7 @@ return [
 
     'code_length' => env('OTP_CODE_LENGTH', 6),
 
-    'expiry_seconds' => env('OTP_EXPIRY_SECONDS', 180), // 3 minutos
+    'expiry_seconds' => env('OTP_EXPIRY_SECONDS', 600), // 10 minutos
 
     'max_attempts' => env('OTP_MAX_ATTEMPTS', 3),
 

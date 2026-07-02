@@ -30,16 +30,16 @@ class PatientAuthController extends Controller
     public function register(PatientRegisterRequest $request): JsonResponse
     {
         $cityId = null;
-        if ($request->city_id) {
-            $city = \App\Models\City::where('uuid', $request->city_id)->first();
+        if ($request->cityId) {
+            $city = \App\Models\City::where('uuid', $request->cityId)->first();
             $cityId = $city?->id;
         }
 
         $patientAccount = PatientAccount::create([
-            'full_name' => $request->full_name,
+            'full_name' => $request->fullName,
             'email' => $request->email,
             'phone' => $request->phone,
-            'national_id' => $request->national_id,
+            'national_id' => $request->nationalId,
             'username' => $request->username,
             'city_id' => $cityId,
             'password_hash' => $request->password ? Hash::make($request->password) : null,

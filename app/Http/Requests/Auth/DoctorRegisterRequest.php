@@ -14,14 +14,14 @@ class DoctorRegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'full_name' => 'required|string|max:255',
+            'fullName' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
-            'city_id' => 'nullable|uuid|exists:cities,uuid',
-            'specialty_ids' => 'required|array|min:1',
-            'specialty_ids.*' => 'uuid|exists:specialties,uuid',
-            'medical_license' => 'required|file|mimes:pdf,jpg,png|max:10240',
+            'cityId' => 'nullable|uuid|exists:cities,uuid',
+            'specialtyIds' => 'required|array|min:1',
+            'specialtyIds.*' => 'exists:specialties,id',
+            'medicalLicense' => 'required|file|mimes:pdf,jpg,png|max:10240',
         ];
     }
 }

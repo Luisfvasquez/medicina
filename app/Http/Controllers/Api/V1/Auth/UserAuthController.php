@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Enums\AccountStatus;
+use App\Enums\DocVerificationType;
 use App\Exceptions\Auth\AccountBannedException;
 use App\Exceptions\Auth\AccountSuspendedException;
 use App\Exceptions\Auth\InvalidCredentialsException;
@@ -39,8 +40,6 @@ class UserAuthController extends Controller
                 $cityId = $city?->id;
             }
 
-            // Convert specialtyIds to database BIGINT ids
-            $specialtyIds = Specialty::whereIn('uuid', $request->specialtyIds)->pluck('id')->toArray();
 
             $user = User::create([
                 'full_name' => $request->fullName,
@@ -53,7 +52,7 @@ class UserAuthController extends Controller
                 'city_id' => $cityId,
             ]);
 
-            $user->specialties()->attach($specialtyIds);
+            $user->specialties()->attach($request->specialtyIds);
 
             // Auto-create personal clinic and main branch for independent practice
             $clinic = \App\Models\Clinic::create([
@@ -104,7 +103,7 @@ class UserAuthController extends Controller
                 'expires_in'   => (int) config('jwt.ttl') * 60,
                 'user'         => $this->authResponse->userPayload($user),
             ])->withCookie($this->authResponse->authCookie($token));
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'Registration failed: ' . $e->getMessage()], 500);
@@ -144,9 +143,14 @@ class UserAuthController extends Controller
 
             $path = $request->file('businessDocument')->store('business_docs', 'local');
 
+            // CLINIC / LABORATORY → COMMERCIAL_REGISTER, PHARMACY → BUSINESS_RIF
+            $docType = in_array($request->providerType, ['CLINIC', 'LABORATORY'])
+                ? DocVerificationType::COMMERCIAL_REGISTER
+                : DocVerificationType::BUSINESS_RIF;
+
             VerificationDocument::create([
                 'user_id' => $user->id,
-                'type' => 'BUSINESS_REGISTRATION',
+                'type' => $docType,
                 'file_url' => $path,
                 'status' => 'PENDING',
             ]);

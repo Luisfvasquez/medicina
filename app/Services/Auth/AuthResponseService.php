@@ -13,16 +13,29 @@ class AuthResponseService
     // ─── Payload builders (contract: camelCase) ────────────────────────────
 
     /**
-     * @return array{id: string, fullName: string, email: string, phone: ?string, role: string}
+     * @return array{id: string, fullName: string, email: string, phone: ?string, role: string, isVerified: bool}
      */
     public function userPayload(User $user): array
     {
+        $isVerified = false;
+        if ($user->role->value === 'ADMIN') {
+            $isVerified = true;
+        } elseif ($user->role->value === 'DOCTOR') {
+            $isVerified = $user->verificationDocuments()
+                ->where('type', 'MEDICAL_LICENSE')
+                ->where('status', 'APPROVED')
+                ->exists();
+        } elseif ($user->role->value === 'PROVIDER') {
+            $isVerified = $user->providerProfile ? (bool) $user->providerProfile->is_verified : false;
+        }
+
         return [
-            'id'       => $user->uuid,
-            'fullName' => $user->full_name,
-            'email'    => $user->email,
-            'phone'    => $user->phone,
-            'role'     => $user->role->value,
+            'id'         => $user->uuid,
+            'fullName'   => $user->full_name,
+            'email'      => $user->email,
+            'phone'      => $user->phone,
+            'role'       => $user->role->value,
+            'isVerified' => $isVerified,
         ];
     }
 

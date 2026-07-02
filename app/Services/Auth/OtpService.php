@@ -6,6 +6,7 @@ use App\Exceptions\Auth\OtpExpiredException;
 use App\Exceptions\Auth\OtpInvalidException;
 use App\Exceptions\Auth\OtpNotFoundException;
 use App\Exceptions\Auth\OtpRateLimitedException;
+use App\Exceptions\Auth\OtpAlreadyVerifiedException;
 use App\Models\OtpAttempt;
 use App\Models\OtpCode;
 
@@ -67,6 +68,7 @@ class OtpService
      */
     public function verify(string $identifier, string $plainCode, string $role): OtpCode
     {
+        // Buscar OTP activo (sin verificar) primero
         $otp = $this->otpCodeModel
             ->forIdentifier($identifier, $role)
             ->whereNull('verified_at')
@@ -74,6 +76,17 @@ class OtpService
             ->first();
 
         if (!$otp) {
+            // No hay OTP activo — ver si existe uno ya verificado (para dar mensaje específico)
+            $verifiedOtp = $this->otpCodeModel
+                ->forIdentifier($identifier, $role)
+                ->whereNotNull('verified_at')
+                ->latest()
+                ->first();
+
+            if ($verifiedOtp) {
+                throw new OtpAlreadyVerifiedException();
+            }
+
             throw new OtpNotFoundException();
         }
 

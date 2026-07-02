@@ -60,6 +60,17 @@ class CookieJwtGuard implements \Illuminate\Contracts\Auth\Guard
                 return null;
             }
 
+            // Evitar colisión de tokens entre guards: los usuarios tienen 'role' en los claims, los pacientes no.
+            $isPatientGuard = ($this->provider->getModel() === \App\Models\PatientAccount::class);
+            $hasRole = $payload->hasKey('role');
+
+            if ($isPatientGuard && $hasRole) {
+                return null;
+            }
+            if (!$isPatientGuard && !$hasRole) {
+                return null;
+            }
+
             $this->user = $this->provider->retrieveById($id);
 
             return $this->user;

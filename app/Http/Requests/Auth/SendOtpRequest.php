@@ -14,7 +14,8 @@ class SendOtpRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'role'    => ['required', 'in:DOCTOR,PATIENT,PROVIDER,ADMIN'],
+            // role es opcional — el backend auto-detecta buscando en patient_accounts y users
+            'role'    => ['sometimes', 'in:DOCTOR,PATIENT,PROVIDER,ADMIN'],
             'channel' => ['required', 'in:WHATSAPP,EMAIL'],
         ];
 

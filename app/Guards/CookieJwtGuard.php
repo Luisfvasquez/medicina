@@ -146,6 +146,24 @@ class CookieJwtGuard implements \Illuminate\Contracts\Auth\Guard
     }
 
     /**
+     * Log the given user ID into the application without sessions or cookies.
+     *
+     * @param  mixed  $id
+     * @return bool
+     */
+    public function onceUsingId($id): bool
+    {
+        $user = $this->provider->retrieveById($id);
+
+        if ($user !== null) {
+            $this->setUser($user);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Logout and invalidate the token.
      */
     public function logout(): void

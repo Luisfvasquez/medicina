@@ -199,6 +199,15 @@ class PatientAuthController extends Controller
             if ($request->has('nationalId') || $request->has('national_id')) {
                 $profileData['national_id'] = $request->nationalId ?? $request->national_id;
             }
+            if ($request->has('cityId') || $request->has('city_id')) {
+                $cityUuid = $request->cityId ?? $request->city_id;
+                if ($cityUuid) {
+                    $city = \App\Models\City::where('uuid', $cityUuid)->first();
+                    $profileData['city_id'] = $city?->id;
+                } else {
+                    $profileData['city_id'] = null;
+                }
+            }
             if ($request->has('address')) {
                 $profileData['address'] = $request->address;
             }

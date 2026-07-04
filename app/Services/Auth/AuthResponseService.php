@@ -74,7 +74,7 @@ class AuthResponseService
      */
     public function patientPayload(PatientAccount $patient): array
     {
-        $patient->loadMissing('patient');
+        $patient->loadMissing(['patient', 'city']);
         $profile = $patient->patient;
 
         return [
@@ -84,7 +84,8 @@ class AuthResponseService
             'phone'                   => $patient->phone,
             'nationalId'              => $patient->national_id,
             'username'                => $patient->username,
-            'cityId'                  => $patient->city_id,
+            'cityId'                  => $patient->city?->uuid,
+            'city_id'                 => $patient->city?->uuid,
             'avatarUrl'               => $patient->avatar_url,
             'isActive'                => $patient->is_active,
             'status'                  => $patient->status?->value ?? $patient->status,

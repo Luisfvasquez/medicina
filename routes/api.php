@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\Phase5\PatientMedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase5\PatientNotificationController;
 use App\Http\Controllers\Api\V1\Phase5\PatientPrescriptionController;
 use App\Http\Controllers\Api\V1\Phase5\PatientQuoteRequestController;
+use App\Http\Controllers\Api\V1\Phase5\PatientDashboardController;
 use App\Http\Controllers\Api\V1\Phase5\PdfExportController;
 use App\Http\Controllers\Api\V1\Phase5\VerifyController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
@@ -336,6 +337,7 @@ Route::prefix('v1')->group(function () {
 
     // Phase 5: Patient Portal (auth:patient_api)
     Route::prefix('patients/me')->middleware('auth:patient_api')->group(function () {
+        Route::get('dashboard', [PatientDashboardController::class, 'index']);
         Route::get('appointments', [PatientAppointmentController::class, 'index']);
         Route::get('appointments/{appointment}', [PatientAppointmentController::class, 'show']);
 

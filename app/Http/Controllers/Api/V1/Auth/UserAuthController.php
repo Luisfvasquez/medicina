@@ -16,7 +16,7 @@ use App\Models\ProviderProfile;
 use App\Models\Specialty;
 use App\Models\User;
 use App\Models\VerificationDocument;
-use App\Services\Auth\AuthResponseService;
+use App\Traits\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,6 +24,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserAuthController extends Controller
 {
+    use HandlesImageUploads;
+
     public function __construct(
         private AuthResponseService $authResponse,
     ) {}
@@ -244,10 +246,26 @@ class UserAuthController extends Controller
             }
         }
         if ($request->has('logoUrl') || $request->has('logo_url')) {
-            $userData['logo_url'] = $request->logoUrl ?? $request->logo_url;
+            $logoVal = $request->logoUrl ?? $request->logo_url;
+            if ($logoVal && str_starts_with($logoVal, 'data:image/')) {
+                $storedLogo = $this->uploadBase64Image($logoVal, 'logos');
+                if ($storedLogo) {
+                    $userData['logo_url'] = $storedLogo;
+                }
+            } else {
+                $userData['logo_url'] = $logoVal;
+            }
         }
         if ($request->has('signatureUrl') || $request->has('signature_url')) {
-            $userData['signature_url'] = $request->signatureUrl ?? $request->signature_url;
+            $sigVal = $request->signatureUrl ?? $request->signature_url;
+            if ($sigVal && str_starts_with($sigVal, 'data:image/')) {
+                $storedSig = $this->uploadBase64Image($sigVal, 'signatures');
+                if ($storedSig) {
+                    $userData['signature_url'] = $storedSig;
+                }
+            } else {
+                $userData['signature_url'] = $sigVal;
+            }
         }
 
         $user->update($userData);

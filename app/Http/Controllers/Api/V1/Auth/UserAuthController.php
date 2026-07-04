@@ -16,6 +16,7 @@ use App\Models\ProviderProfile;
 use App\Models\Specialty;
 use App\Models\User;
 use App\Models\VerificationDocument;
+use App\Services\Auth\AuthResponseService;
 use App\Traits\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;

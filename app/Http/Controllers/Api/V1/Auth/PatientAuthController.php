@@ -12,12 +12,15 @@ use App\Http\Requests\Auth\PatientRegisterRequest;
 use App\Models\Patient;
 use App\Models\PatientAccount;
 use App\Services\Auth\AuthResponseService;
+use App\Traits\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class PatientAuthController extends Controller
 {
+    use HandlesImageUploads;
+
     public function __construct(
         private AuthResponseService $authResponse,
     ) {}
@@ -164,7 +167,15 @@ class PatientAuthController extends Controller
             }
         }
         if ($request->has('avatarUrl') || $request->has('avatar_url')) {
-            $accountData['avatar_url'] = $request->avatarUrl ?? $request->avatar_url;
+            $avatarVal = $request->avatarUrl ?? $request->avatar_url;
+            if ($avatarVal && str_starts_with($avatarVal, 'data:image/')) {
+                $storedUrl = $this->uploadBase64Image($avatarVal, 'avatars');
+                if ($storedUrl) {
+                    $accountData['avatar_url'] = $storedUrl;
+                }
+            } else {
+                $accountData['avatar_url'] = $avatarVal;
+            }
         }
 
         $patient->update($accountData);

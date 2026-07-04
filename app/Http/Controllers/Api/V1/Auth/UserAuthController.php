@@ -201,6 +201,81 @@ class UserAuthController extends Controller
         ]);
     }
 
+    public function updateProfile(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $user = auth('user_api')->user();
+
+        $validated = $request->validate([
+            'fullName' => 'sometimes|string|max:255',
+            'full_name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|string|unique:users,phone,' . $user->id,
+            'cityId' => 'sometimes|string|nullable',
+            'city_id' => 'sometimes|string|nullable',
+            'logoUrl' => 'sometimes|string|nullable',
+            'logo_url' => 'sometimes|string|nullable',
+            'signatureUrl' => 'sometimes|string|nullable',
+            'signature_url' => 'sometimes|string|nullable',
+            
+            // Datos comerciales
+            'commercialName' => 'sometimes|string|nullable',
+            'commercial_name' => 'sometimes|string|nullable',
+            'rif' => 'sometimes|string|nullable',
+            'address' => 'sometimes|string|nullable',
+        ]);
+
+        $userData = [];
+        if ($request->has('fullName') || $request->has('full_name')) {
+            $userData['full_name'] = $request->fullName ?? $request->full_name;
+        }
+        if ($request->has('email')) {
+            $userData['email'] = $request->email;
+        }
+        if ($request->has('phone')) {
+            $userData['phone'] = $request->phone;
+        }
+        if ($request->has('cityId') || $request->has('city_id')) {
+            $cityUuid = $request->cityId ?? $request->city_id;
+            if ($cityUuid) {
+                $city = \App\Models\City::where('uuid', $cityUuid)->first();
+                $userData['city_id'] = $city?->id;
+            } else {
+                $userData['city_id'] = null;
+            }
+        }
+        if ($request->has('logoUrl') || $request->has('logo_url')) {
+            $userData['logo_url'] = $request->logoUrl ?? $request->logo_url;
+        }
+        if ($request->has('signatureUrl') || $request->has('signature_url')) {
+            $userData['signature_url'] = $request->signatureUrl ?? $request->signature_url;
+        }
+
+        $user->update($userData);
+
+        $user->loadMissing('providerProfile');
+        if ($user->providerProfile) {
+            $providerData = [];
+            if ($request->has('commercialName') || $request->has('commercial_name')) {
+                $providerData['commercial_name'] = $request->commercialName ?? $request->commercial_name;
+            }
+            if ($request->has('rif')) {
+                $providerData['rif'] = $request->rif;
+            }
+            if ($request->has('address')) {
+                $providerData['address'] = $request->address;
+            }
+            
+            if (!empty($providerData)) {
+                $user->providerProfile->update($providerData);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'user' => $this->authResponse->userPayload($user->fresh()),
+        ]);
+    }
+
     public function logout(): JsonResponse
     {
         JWTAuth::invalidate(true);

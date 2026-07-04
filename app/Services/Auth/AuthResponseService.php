@@ -29,13 +29,43 @@ class AuthResponseService
             $isVerified = $user->providerProfile ? (bool) $user->providerProfile->is_verified : false;
         }
 
+        $user->loadMissing(['providerProfile', 'city']);
+
         return [
-            'id'         => $user->uuid,
-            'fullName'   => $user->full_name,
-            'email'      => $user->email,
-            'phone'      => $user->phone,
-            'role'       => $user->role->value,
-            'isVerified' => $isVerified,
+            'id'              => $user->uuid,
+            'fullName'        => $user->full_name,
+            'full_name'       => $user->full_name,
+            'email'           => $user->email,
+            'phone'           => $user->phone,
+            'role'            => $user->role->value,
+            'isVerified'      => $isVerified,
+            'logoUrl'         => $user->logo_url,
+            'logo_url'        => $user->logo_url,
+            'signatureUrl'    => $user->signature_url,
+            'signature_url'   => $user->signature_url,
+            'cityId'          => $user->city?->uuid,
+            'city_id'         => $user->city?->uuid,
+            'status'          => $user->status?->value ?? $user->status,
+            'planType'        => $user->plan_type?->value ?? $user->plan_type,
+            'plan_type'       => $user->plan_type?->value ?? $user->plan_type,
+            'providerProfile' => $user->providerProfile ? [
+                'id' => $user->providerProfile->uuid ?? $user->providerProfile->id,
+                'type' => $user->providerProfile->type,
+                'commercial_name' => $user->providerProfile->commercial_name,
+                'rif' => $user->providerProfile->rif,
+                'is_verified' => (bool) $user->providerProfile->is_verified,
+                'address' => $user->providerProfile->address,
+                'phone' => $user->providerProfile->phone,
+            ] : null,
+            'provider_profile' => $user->providerProfile ? [
+                'id' => $user->providerProfile->uuid ?? $user->providerProfile->id,
+                'type' => $user->providerProfile->type,
+                'commercial_name' => $user->providerProfile->commercial_name,
+                'rif' => $user->providerProfile->rif,
+                'is_verified' => (bool) $user->providerProfile->is_verified,
+                'address' => $user->providerProfile->address,
+                'phone' => $user->providerProfile->phone,
+            ] : null,
         ];
     }
 
@@ -44,11 +74,31 @@ class AuthResponseService
      */
     public function patientPayload(PatientAccount $patient): array
     {
+        $patient->loadMissing('patient');
+        $profile = $patient->patient;
+
         return [
-            'id'       => $patient->uuid,
-            'fullName' => $patient->full_name,
-            'email'    => $patient->email,
-            'phone'    => $patient->phone,
+            'id'                      => $patient->uuid,
+            'fullName'                => $patient->full_name,
+            'email'                   => $patient->email,
+            'phone'                   => $patient->phone,
+            'nationalId'              => $patient->national_id,
+            'username'                => $patient->username,
+            'cityId'                  => $patient->city_id,
+            'avatarUrl'               => $patient->avatar_url,
+            'isActive'                => $patient->is_active,
+            'status'                  => $patient->status?->value ?? $patient->status,
+            'role'                    => 'patient',
+            
+            // Clinical/profile details from associated Patient model if exists
+            'address'                 => $profile?->address,
+            'birthDate'               => $profile?->birth_date?->format('Y-m-d'),
+            'gender'                  => $profile?->gender?->value ?? $profile?->gender,
+            'bloodType'               => $profile?->blood_type,
+            'allergies'               => $profile?->allergies,
+            'chronicConditions'       => $profile?->chronic_conditions,
+            'emergencyContactName'    => $profile?->emergency_contact_name,
+            'emergencyContactPhone'   => $profile?->emergency_contact_phone,
         ];
     }
 

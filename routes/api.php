@@ -77,6 +77,7 @@ Route::prefix('v1/auth')->group(function () {
                 ->middleware('deprecated:Use POST /api/v1/auth/logout then login again');
             Route::get('me',       [UserAuthController::class, 'me'])
                 ->middleware('deprecated:Use GET /api/v1/auth/me');
+            Route::patch('me',     [UserAuthController::class, 'updateProfile']);
         });
     });
 
@@ -94,6 +95,7 @@ Route::prefix('v1/auth')->group(function () {
                 ->middleware('deprecated:Use POST /api/v1/auth/logout then login again');
             Route::get('me',       [PatientAuthController::class, 'me'])
                 ->middleware('deprecated:Use GET /api/v1/auth/me');
+            Route::patch('me',     [PatientAuthController::class, 'updateProfile']);
         });
     });
 });

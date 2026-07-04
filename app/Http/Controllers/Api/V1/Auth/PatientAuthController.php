@@ -98,7 +98,7 @@ class PatientAuthController extends Controller
 
     public function me(): JsonResponse
     {
-        $patient = JWTAuth::authenticate();
+        $patient = auth('patient_api')->user();
 
         return response()->json([
             'user' => $this->authResponse->patientPayload($patient),

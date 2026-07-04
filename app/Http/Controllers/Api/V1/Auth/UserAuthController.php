@@ -194,7 +194,7 @@ class UserAuthController extends Controller
 
     public function me(): JsonResponse
     {
-        $user = JWTAuth::authenticate();
+        $user = auth('user_api')->user();
 
         return response()->json([
             'user' => $this->authResponse->userPayload($user),

@@ -98,7 +98,7 @@ class PatientAuthController extends Controller
 
     public function me(): JsonResponse
     {
-        $patient = JWTAuth::parseToken()->authenticate();
+        $patient = JWTAuth::authenticate();
 
         return response()->json([
             'user' => $this->authResponse->patientPayload($patient),
@@ -107,7 +107,7 @@ class PatientAuthController extends Controller
 
     public function logout(): JsonResponse
     {
-        JWTAuth::parseToken()->invalidate();
+        JWTAuth::invalidate(true);
 
         return response()->json([
             'status'  => 'success',
@@ -117,7 +117,7 @@ class PatientAuthController extends Controller
 
     public function refresh(): JsonResponse
     {
-        $token = JWTAuth::parseToken()->refresh();
+        $token = JWTAuth::refresh();
 
         return response()->json([
             'accessToken'  => $token,

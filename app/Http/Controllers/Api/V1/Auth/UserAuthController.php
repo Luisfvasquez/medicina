@@ -194,7 +194,7 @@ class UserAuthController extends Controller
 
     public function me(): JsonResponse
     {
-        $user = JWTAuth::parseToken()->authenticate();
+        $user = JWTAuth::authenticate();
 
         return response()->json([
             'user' => $this->authResponse->userPayload($user),
@@ -203,7 +203,7 @@ class UserAuthController extends Controller
 
     public function logout(): JsonResponse
     {
-        JWTAuth::parseToken()->invalidate();
+        JWTAuth::invalidate(true);
 
         return response()->json([
             'status'  => 'success',
@@ -213,7 +213,7 @@ class UserAuthController extends Controller
 
     public function refresh(): JsonResponse
     {
-        $token = JWTAuth::parseToken()->refresh();
+        $token = JWTAuth::refresh();
 
         return response()->json([
             'user' => $this->authResponse->userPayload(JWTAuth::setToken($token)->toUser()),

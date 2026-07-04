@@ -63,6 +63,7 @@ class PatientDashboardController extends Controller
                 'doctor_name' => $nextAppointmentModel->doctor?->full_name ?? 'Dr. García',
                 'doctor_specialty' => $nextAppointmentModel->doctor?->specialties()->first()?->name ?? 'Medicina General',
                 'date' => Carbon::parse($nextAppointmentModel->date)->isoFormat('dddd, D [de] MMMM'),
+                'date_raw' => Carbon::parse($nextAppointmentModel->date)->toDateString(),
                 'time' => Carbon::parse($nextAppointmentModel->time)->format('H:i'),
                 'type' => $nextAppointmentModel->type === 'ONLINE' ? 'Telemedicina' : 'Presencial',
                 'status' => $nextAppointmentModel->status === \App\Enums\AppointmentStatus::CONFIRMED ? 'Confirmada' : 'Pendiente',

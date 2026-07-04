@@ -408,8 +408,9 @@ class SyncService
             try {
                 $existing = $modelClass::where('uuid', $itemUuid)->first();
 
-                $data = $this->onlyFillable(new $modelClass(), $item, $fillableFields);
-                $data = $this->normalizeEnumFields($data);
+                $modelInstance = new $modelClass();
+                $data = $this->onlyFillable($modelInstance, $item, $fillableFields);
+                $data = $this->normalizeEnumFields($modelInstance, $data);
                 foreach ($fkData as $col => $val) {
                     $data[$col] = $val;
                 }
@@ -668,8 +669,9 @@ class SyncService
             try {
                 $existing = $modelClass::where('uuid', $itemUuid)->first();
 
-                $data = $this->onlyFillable(new $modelClass(), $item, $fillableFields);
-                $data = $this->normalizeEnumFields($data);
+                $modelInstance = new $modelClass();
+                $data = $this->onlyFillable($modelInstance, $item, $fillableFields);
+                $data = $this->normalizeEnumFields($modelInstance, $data);
                 foreach ($fkData as $col => $val) {
                     $data[$col] = $val;
                 }
@@ -1026,12 +1028,21 @@ class SyncService
         return $data;
     }
 
-    /** Normalize enum fields to uppercase to match backend enum values. */
-    private function normalizeEnumFields(array $data): array
+    /** Normalize enum fields to match exact backend backing values (case-insensitive). */
+    private function normalizeEnumFields($model, array $data): array
     {
-        // Normalize 'status' field to uppercase if present
-        if (isset($data['status']) && is_string($data['status'])) {
-            $data['status'] = strtoupper($data['status']);
+        foreach ($data as $key => $value) {
+            if (is_string($value) && $model->hasCast($key)) {
+                $castType = $model->getCasts()[$key];
+                if (is_string($castType) && enum_exists($castType)) {
+                    foreach ($castType::cases() as $case) {
+                        if (strcasecmp($case->value, $value) === 0) {
+                            $data[$key] = $case->value;
+                            break;
+                        }
+                    }
+                }
+            }
         }
         return $data;
     }

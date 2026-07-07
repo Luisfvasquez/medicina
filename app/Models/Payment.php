@@ -17,6 +17,7 @@ class Payment extends Model
         'reference',
         'paid_at',
         'notes',
+        'receipt_path',
     ];
 
     protected function casts(): array

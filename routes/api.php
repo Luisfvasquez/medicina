@@ -357,6 +357,7 @@ Route::prefix('v1')->group(function () {
         Route::get('invoices', [PatientInvoiceController::class, 'index']);
         Route::get('invoices/{invoice}', [PatientInvoiceController::class, 'show']);
         Route::get('invoices/{invoice}/payments', [PatientInvoiceController::class, 'payments']);
+        Route::post('invoices/{invoice}/payments', [PatientInvoiceController::class, 'storePayment']);
 
         Route::get('notifications', [PatientNotificationController::class, 'index']);
         Route::get('notifications/{notification}', [PatientNotificationController::class, 'show']);

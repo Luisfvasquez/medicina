@@ -66,7 +66,7 @@ class PatientDashboardController extends Controller
                 'date_raw' => Carbon::parse($nextAppointmentModel->date)->toDateString(),
                 'time' => Carbon::parse($nextAppointmentModel->time)->format('H:i'),
                 'type' => $nextAppointmentModel->type === 'ONLINE' ? 'Telemedicina' : 'Presencial',
-                'status' => $nextAppointmentModel->status === \App\Enums\AppointmentStatus::CONFIRMED ? 'Confirmada' : 'Pendiente',
+                'status' => $nextAppointmentModel->status === \App\Enums\AppointmentStatus::PENDING ? 'Pendiente' : 'Confirmada',
             ];
         }
 

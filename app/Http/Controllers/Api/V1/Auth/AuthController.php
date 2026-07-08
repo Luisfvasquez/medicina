@@ -51,7 +51,11 @@ class AuthController extends Controller
      */
     public function logout(): JsonResponse
     {
-        auth('user_api')->logout();
+        if (auth('user_api')->check()) {
+            auth('user_api')->logout();
+        } elseif (auth('patient_api')->check()) {
+            auth('patient_api')->logout();
+        }
 
         return response()->json([
             'status'  => 'success',
@@ -64,8 +68,13 @@ class AuthController extends Controller
      */
     public function me(): JsonResponse
     {
-        // Guard auto-parses cookie on first access
-        $user = auth('user_api')->user();
+        $user = auth('user_api')->user() ?? auth('patient_api')->user();
+
+        if ($user instanceof \App\Models\PatientAccount) {
+            return response()->json([
+                'user' => $this->authResponse->patientPayload($user),
+            ]);
+        }
 
         return response()->json([
             'user' => $this->authResponse->userPayload($user),

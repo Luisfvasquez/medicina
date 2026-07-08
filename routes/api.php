@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\PatientFamilyHistoryController;
 use App\Http\Controllers\Api\V1\PatientSurgicalHistoryController;
 use App\Http\Controllers\Api\V1\PatientVaccinationController;
 use App\Http\Controllers\Api\V1\DocumentUploadController;
+use App\Http\Controllers\Api\V1\DoctorDashboardController;
 use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase3\MedicationController;
 use App\Http\Controllers\Api\V1\Phase3\PrescriptionController;
@@ -57,7 +58,7 @@ Route::prefix('v1/auth')->group(function () {
     Route::post('verify-otp',     [OtpController::class, 'verify']);
     Route::post('login-password', [AuthController::class, 'loginPassword']);
 
-    Route::middleware('auth:user_api')->group(function () {
+    Route::middleware('auth:user_api,patient_api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me',      [AuthController::class, 'me']);
     });
@@ -133,6 +134,8 @@ Route::prefix('v1')->group(function () {
     Route::post('sync', [SyncController::class, 'sync']);
 
     Route::middleware('auth:user_api')->group(function () {
+        Route::get('doctor/dashboard', [DoctorDashboardController::class, 'index']);
+
         // Appointments - idempotent store
         Route::get('appointments', [AppointmentController::class, 'index']);
         Route::post('appointments', [AppointmentController::class, 'store'])->middleware('idempotent');

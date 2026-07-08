@@ -14,12 +14,12 @@ class StoreConsultationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|uuid|exists:users,id',
-            'patient_id' => 'required|uuid|exists:patients,id',
-            'appointment_id' => 'nullable|uuid|exists:appointments,id',
-            'clinic_branch_id' => 'nullable|uuid|exists:clinic_branches,id',
+            'user_id' => 'nullable|uuid|exists:users,id',
+            'patient_uuid' => 'required|uuid|exists:patients,uuid',
+            'appointment_uuid' => 'nullable|uuid|exists:appointments,uuid',
+            'clinic_branch_uuid' => 'nullable|uuid|exists:clinic_branches,uuid',
             'form_template_id' => 'nullable|uuid|exists:form_templates,id',
-            'date' => 'required|date',
+            'date' => 'nullable|date',
             'reason' => 'nullable|string',
             'physical_exam' => 'nullable|string',
             'diagnosis' => 'nullable|string',

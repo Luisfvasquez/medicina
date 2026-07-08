@@ -71,8 +71,7 @@ class ConsultationController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $consultation = Consultation::with(['patient', 'user', 'clinicBranch', 'formTemplate', 'vitalSign', 'labRequest', 'prescription.items.medication', 'followUps'])
-            ->findOrFail($id);
+        $consultation = Consultation::with(['patient', 'user', 'clinicBranch', 'formTemplate', 'vitalSign', 'labRequest', 'prescription.items.medication', 'followUps'])->where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role === 'DOCTOR' && $consultation->user_id !== $user->id) {
@@ -84,7 +83,7 @@ class ConsultationController extends Controller
 
     public function update(UpdateConsultationRequest $request, string $id): JsonResponse
     {
-        $consultation = Consultation::findOrFail($id);
+        $consultation = Consultation::where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         $role = $user && $user->role instanceof \App\Enums\UserRole ? $user->role->value : ($user->role ?? null);
@@ -155,7 +154,7 @@ class ConsultationController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $consultation = Consultation::findOrFail($id);
+        $consultation = Consultation::where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role !== 'ADMIN' && $consultation->user_id !== $user->id) {

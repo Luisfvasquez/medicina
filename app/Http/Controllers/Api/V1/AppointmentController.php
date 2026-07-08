@@ -111,7 +111,7 @@ class AppointmentController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $appointment = Appointment::with(['patient', 'doctor', 'clinicBranch', 'consultation.vitalSign'])->findOrFail($id);
+        $appointment = Appointment::with(['patient', 'doctor', 'clinicBranch', 'consultation.vitalSign'])->where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         $role = $user && $user->role instanceof \App\Enums\UserRole ? $user->role->value : ($user->role ?? null);
@@ -137,7 +137,7 @@ class AppointmentController extends Controller
 
     public function update(UpdateAppointmentRequest $request, string $id): JsonResponse
     {
-        $appointment = Appointment::findOrFail($id);
+        $appointment = Appointment::where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role === 'DOCTOR' && $appointment->user_id !== $user->id) {
@@ -176,7 +176,7 @@ class AppointmentController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $appointment = Appointment::findOrFail($id);
+        $appointment = Appointment::where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role === 'DOCTOR' && $appointment->user_id !== $user->id) {

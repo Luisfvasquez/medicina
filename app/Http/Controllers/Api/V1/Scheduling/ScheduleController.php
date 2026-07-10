@@ -17,7 +17,16 @@ class ScheduleController extends Controller
         $user = auth('user_api')->user();
 
         $schedules = DoctorSchedule::where('user_id', $user->id)
-            ->orderByRaw("FIELD(weekday, 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY')")
+            ->orderByRaw("CASE weekday
+                WHEN 'MONDAY' THEN 1
+                WHEN 'TUESDAY' THEN 2
+                WHEN 'WEDNESDAY' THEN 3
+                WHEN 'THURSDAY' THEN 4
+                WHEN 'FRIDAY' THEN 5
+                WHEN 'SATURDAY' THEN 6
+                WHEN 'SUNDAY' THEN 7
+                ELSE 8
+            END")
             ->get();
 
         return response()->json(['data' => $schedules]);

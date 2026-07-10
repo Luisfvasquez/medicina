@@ -8,15 +8,27 @@ use App\Http\Requests\Api\V1\Medication\UpdateMedicationRequest;
 use App\Models\Medication;
 use Illuminate\Http\JsonResponse;
 
+use Illuminate\Http\Request;
+
 class MedicationController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $medications = Medication::with('user')
-            ->whereNull('user_id')
-            ->orWhere('user_id', auth('user_api')->id())
-            ->latest()
-            ->paginate(20);
+        $query = Medication::with('user')
+            ->where(function ($q) {
+                $q->whereNull('user_id')
+                  ->orWhere('user_id', auth('user_api')->id());
+            });
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('active_principle', 'ILIKE', "%{$search}%")
+                  ->orWhere('commercial_name', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        $medications = $query->latest()->paginate(20);
 
         return response()->json(['data' => $medications]);
     }

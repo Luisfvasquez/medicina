@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ClinicScheduleSeeder::class,
             FormTemplateSeeder::class,
             CatalogSeeder::class,
+            MedicationSeeder::class,
             DoctorScheduleSeeder::class,
             DoctorBranchScheduleSeeder::class,
         ]);

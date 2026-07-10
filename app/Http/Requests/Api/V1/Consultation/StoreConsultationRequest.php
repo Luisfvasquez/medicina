@@ -24,7 +24,15 @@ class StoreConsultationRequest extends FormRequest
             'physical_exam' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'treatment_plan' => 'nullable|string',
-            'dynamic_data' => 'nullable|array',
+            'vitals' => 'nullable|array',
+            'vitals.weight' => 'nullable|numeric',
+            'vitals.height' => 'nullable|numeric',
+            'vitals.systolic_bp' => 'nullable|integer',
+            'vitals.diastolic_bp' => 'nullable|integer',
+            'vitals.heart_rate' => 'nullable|integer',
+            'vitals.respiratory_rate' => 'nullable|numeric',
+            'vitals.temperature' => 'nullable|numeric',
+            'vitals.oxygen_sat' => 'nullable|integer',
         ];
     }
 }

@@ -66,7 +66,16 @@ class ConsultationController extends Controller
             $appointment->update(['status' => 'in-progress']);
         }
 
-        return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch'])], 201);
+        $vitalsData = $request->input('vitals');
+        if (is_array($vitalsData)) {
+            \App\Models\VitalSign::create(array_merge($vitalsData, [
+                'consultation_id' => $consultation->id,
+                'patient_id' => $patient->id,
+                'date' => \Carbon\Carbon::now(),
+            ]));
+        }
+
+        return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign'])], 201);
     }
 
     public function show(string $id): JsonResponse
@@ -105,6 +114,17 @@ class ConsultationController extends Controller
 
         $consultation->update($updateData);
 
+        $vitalsData = $request->input('vitals');
+        if (is_array($vitalsData)) {
+            \App\Models\VitalSign::updateOrCreate(
+                ['consultation_id' => $consultation->id],
+                array_merge($vitalsData, [
+                    'patient_id' => $consultation->patient_id,
+                    'date' => \Carbon\Carbon::now(),
+                ])
+            );
+        }
+
         // Si el estado pasa a completed, actualizar la cita correspondiente
         if ($consultation->status === \App\Enums\ConsultationStatus::COMPLETED || $request->input('status') === 'completed') {
             if ($consultation->appointment) {
@@ -115,8 +135,8 @@ class ConsultationController extends Controller
         // Procesar recetas si se envían en el request
         $prescriptionsData = $request->input('prescriptions');
         if (is_array($prescriptionsData)) {
-            // Eliminar anterior para evitar duplicados
-            $consultation->prescription()->delete();
+            // Eliminar anterior físicamente (incluso si está soft-deleted) para evitar violar la restricción unique de Postgres
+            $consultation->prescription()->withTrashed()->forceDelete();
 
             if (count($prescriptionsData) > 0) {
                 $rx = \App\Models\Prescription::create([

@@ -18,7 +18,7 @@ class StoreMedicationRequest extends FormRequest
             'active_principle' => 'required|string|max:255',
             'concentration' => 'required|string|max:255',
             'presentation' => 'required|string|in:CAPSULA,TABLETA,JARABE,GOTAS,AMPOLLA,CREMA',
-            'administration_route' => 'required|string|in:ORAL,INTRAVENOSA,TOPICA,INTRAMUSCULAR,SUBCUTANEA,RECTAL,INHALATORIA,SUBLINGUAL,TRANSDERMICA',
+            'administration_route' => 'required|string|in:ORAL,INTRAVENOSA,TOPICA,INTRAMUSCULAR,SUBCUTANEA,RECTAL,INHALATORIA,SUBLINGUAL,TRANSDERMICA,OFTALMICA',
             'commercial_name' => 'nullable|string|max:255',
             'requires_prescription' => 'boolean',
             'contraindications' => 'nullable|string',

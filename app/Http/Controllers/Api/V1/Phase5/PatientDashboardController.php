@@ -41,7 +41,11 @@ class PatientDashboardController extends Controller
         }
 
         Carbon::setLocale('es');
-        $today = Carbon::today()->toDateString();
+        $timezone = $request->header('X-Timezone') ?? $request->input('timezone') ?? 'America/Caracas';
+        if (!in_array($timezone, timezone_identifiers_list(), true)) {
+            $timezone = 'America/Caracas';
+        }
+        $today = Carbon::today($timezone)->toDateString();
 
         // 1. Citas futuras
         $upcomingAppointmentsCount = Appointment::where('patient_id', $patient->id)

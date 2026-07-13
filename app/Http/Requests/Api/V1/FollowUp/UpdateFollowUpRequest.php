@@ -16,12 +16,17 @@ class UpdateFollowUpRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'uuid' => 'nullable|uuid',
             'user_id' => 'sometimes|uuid|exists:users,id',
             'patient_id' => 'sometimes|uuid|exists:patients,id',
+            'patient_uuid' => 'sometimes|uuid|exists:patients,uuid',
             'consultation_id' => 'nullable|uuid|exists:consultations,id',
+            'consultation_uuid' => 'nullable|uuid|exists:consultations,uuid',
             'scheduled_date' => 'sometimes|date',
             'status' => ['sometimes', Rule::enum(FollowStatus::class)],
             'response' => 'nullable|string',
+            'channel' => 'sometimes|string',
+            'message_template' => 'nullable|string',
         ];
     }
 }

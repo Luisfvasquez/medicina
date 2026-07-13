@@ -17,6 +17,8 @@ class FollowUp extends Model
         'scheduled_date',
         'status',
         'response',
+        'channel',
+        'message_template',
     ];
 
     protected function casts(): array

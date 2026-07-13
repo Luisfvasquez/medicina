@@ -33,6 +33,11 @@ class StoreConsultationRequest extends FormRequest
             'vitals.respiratory_rate' => 'nullable|numeric',
             'vitals.temperature' => 'nullable|numeric',
             'vitals.oxygen_sat' => 'nullable|integer',
+            'follow_up' => 'nullable|array',
+            'follow_up.uuid' => 'nullable|uuid',
+            'follow_up.scheduled_date' => 'sometimes|date',
+            'follow_up.channel' => 'sometimes|string',
+            'follow_up.message_template' => 'nullable|string',
         ];
     }
 }

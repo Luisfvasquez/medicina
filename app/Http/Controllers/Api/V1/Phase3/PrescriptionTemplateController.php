@@ -32,8 +32,12 @@ class PrescriptionTemplateController extends Controller
 
             if ($request->has('items')) {
                 foreach ($request->input('items') as $item) {
-                    $item['template_id'] = $template->id;
-                    TemplateItem::create($item);
+                    $medication = \App\Models\Medication::where('uuid', $item['medication_id'])->first();
+                    if ($medication) {
+                        $item['medication_id'] = $medication->id;
+                        $item['template_id'] = $template->id;
+                        TemplateItem::create($item);
+                    }
                 }
             }
 
@@ -70,8 +74,12 @@ class PrescriptionTemplateController extends Controller
             if ($request->has('items')) {
                 $template->items()->delete();
                 foreach ($request->input('items') as $item) {
-                    $item['template_id'] = $template->id;
-                    TemplateItem::create($item);
+                    $medication = \App\Models\Medication::where('uuid', $item['medication_id'])->first();
+                    if ($medication) {
+                        $item['medication_id'] = $medication->id;
+                        $item['template_id'] = $template->id;
+                        TemplateItem::create($item);
+                    }
                 }
             }
         });

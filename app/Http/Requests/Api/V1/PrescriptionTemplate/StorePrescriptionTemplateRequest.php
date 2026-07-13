@@ -16,7 +16,7 @@ class StorePrescriptionTemplateRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'items' => 'nullable|array',
-            'items.*.medication_id' => 'nullable|uuid|exists:medications,id',
+            'items.*.medication_id' => 'nullable|uuid|exists:medications,uuid',
             'items.*.dose' => 'nullable|string|max:255',
             'items.*.frequency' => 'nullable|string|max:255',
             'items.*.duration' => 'nullable|string|max:255',

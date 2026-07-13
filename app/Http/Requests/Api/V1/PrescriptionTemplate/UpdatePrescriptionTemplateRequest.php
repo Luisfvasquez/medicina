@@ -14,12 +14,13 @@ class UpdatePrescriptionTemplateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'string|max:255',
+            'title' => 'nullable|string|max:255',
             'items' => 'nullable|array',
-            'items.*.medication' => 'required_with:items|string|max:255',
-            'items.*.dosage' => 'nullable|string|max:255',
+            'items.*.medication_id' => 'nullable|uuid|exists:medications,uuid',
+            'items.*.dose' => 'nullable|string|max:255',
             'items.*.frequency' => 'nullable|string|max:255',
             'items.*.duration' => 'nullable|string|max:255',
+            'items.*.notes' => 'nullable|string',
         ];
     }
 }

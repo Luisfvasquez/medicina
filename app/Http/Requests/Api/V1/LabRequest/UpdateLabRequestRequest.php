@@ -14,9 +14,9 @@ class UpdateLabRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'exams_list' => 'sometimes|array',
+            'exams_list' => 'sometimes|required|array',
             'instructions' => 'nullable|string',
-            'is_completed' => 'sometimes|boolean',
+            'is_completed' => 'nullable|boolean',
         ];
     }
 }

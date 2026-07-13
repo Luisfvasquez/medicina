@@ -14,9 +14,9 @@ class StoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => 'required|uuid|exists:patients,id',
-            'user_id' => 'required|uuid|exists:users,id',
-            'clinic_branch_id' => 'nullable|uuid|exists:clinic_branches,id',
+            'patient_id' => 'required|uuid|exists:patients,uuid',
+            'user_id' => 'required|uuid|exists:users,uuid',
+            'clinic_branch_id' => 'nullable|uuid|exists:clinic_branches,uuid',
             'date' => 'required|date',
             'time' => 'required',
             'type' => 'required|string',

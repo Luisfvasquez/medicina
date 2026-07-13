@@ -30,14 +30,34 @@ class FollowUpController extends Controller
 
     public function store(StoreFollowUpRequest $request): JsonResponse
     {
-        $followUp = FollowUp::create($request->validated());
+        $user = auth('user_api')->user();
+
+        $patient = \App\Models\Patient::where('uuid', $request->patient_uuid)->firstOrFail();
+        $consultation = $request->consultation_uuid 
+            ? \App\Models\Consultation::where('uuid', $request->consultation_uuid)->first() 
+            : null;
+
+        $followUp = FollowUp::create([
+            'uuid' => $request->uuid ?? \Illuminate\Support\Str::uuid()->toString(),
+            'user_id' => $user->id,
+            'patient_id' => $patient->id,
+            'consultation_id' => $consultation?->id,
+            'scheduled_date' => $request->scheduled_date,
+            'channel' => $request->channel ?? 'MANUAL_CALL',
+            'message_template' => $request->message_template,
+            'status' => $request->status ?? \App\Enums\FollowStatus::PENDING->value,
+            'response' => $request->response,
+        ]);
 
         return response()->json(['data' => $followUp->load(['patient', 'user', 'consultation'])], 201);
     }
 
     public function show(string $id): JsonResponse
     {
-        $followUp = FollowUp::with(['patient', 'user', 'consultation'])->findOrFail($id);
+        $followUp = FollowUp::with(['patient', 'user', 'consultation'])
+            ->where('id', $id)
+            ->orWhere('uuid', $id)
+            ->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role === 'DOCTOR' && $followUp->user_id !== $user->id) {
@@ -49,21 +69,35 @@ class FollowUpController extends Controller
 
     public function update(UpdateFollowUpRequest $request, string $id): JsonResponse
     {
-        $followUp = FollowUp::findOrFail($id);
+        $followUp = FollowUp::where('id', $id)
+            ->orWhere('uuid', $id)
+            ->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role === 'DOCTOR' && $followUp->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $followUp->update($request->validated());
+        $updateData = $request->validated();
+        if ($request->has('patient_uuid')) {
+            $updateData['patient_id'] = \App\Models\Patient::where('uuid', $request->patient_uuid)->firstOrFail()->id;
+        }
+        if ($request->has('consultation_uuid')) {
+            $updateData['consultation_id'] = $request->consultation_uuid 
+                ? \App\Models\Consultation::where('uuid', $request->consultation_uuid)->firstOrFail()->id
+                : null;
+        }
+
+        $followUp->update($updateData);
 
         return response()->json(['data' => $followUp->fresh()->load(['patient', 'user', 'consultation'])]);
     }
 
     public function destroy(string $id): JsonResponse
     {
-        $followUp = FollowUp::findOrFail($id);
+        $followUp = FollowUp::where('id', $id)
+            ->orWhere('uuid', $id)
+            ->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role !== 'ADMIN' && $followUp->user_id !== $user->id) {

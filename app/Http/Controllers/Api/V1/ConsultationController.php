@@ -75,7 +75,21 @@ class ConsultationController extends Controller
             ]));
         }
 
-        return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign'])], 201);
+        $followUpData = $request->input('follow_up');
+        if (is_array($followUpData) && !empty($followUpData['scheduled_date'])) {
+            \App\Models\FollowUp::create([
+                'uuid' => $followUpData['uuid'] ?? \Illuminate\Support\Str::uuid()->toString(),
+                'user_id' => $consultation->user_id,
+                'patient_id' => $consultation->patient_id,
+                'consultation_id' => $consultation->id,
+                'scheduled_date' => $followUpData['scheduled_date'],
+                'channel' => $followUpData['channel'] ?? 'MANUAL_CALL',
+                'message_template' => $followUpData['message_template'] ?? null,
+                'status' => \App\Enums\FollowStatus::PENDING->value,
+            ]);
+        }
+
+        return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign', 'followUps'])], 201);
     }
 
     public function show(string $id): JsonResponse
@@ -167,6 +181,25 @@ class ConsultationController extends Controller
                     }
                 }
             }
+        }
+
+        // Procesar seguimiento si se envía en el request
+        $followUpData = $request->input('follow_up');
+        if (is_array($followUpData) && !empty($followUpData['scheduled_date'])) {
+            \App\Models\FollowUp::updateOrCreate(
+                ['consultation_id' => $consultation->id],
+                [
+                    'uuid' => $followUpData['uuid'] ?? \Illuminate\Support\Str::uuid()->toString(),
+                    'user_id' => $consultation->user_id,
+                    'patient_id' => $consultation->patient_id,
+                    'scheduled_date' => $followUpData['scheduled_date'],
+                    'channel' => $followUpData['channel'] ?? 'MANUAL_CALL',
+                    'message_template' => $followUpData['message_template'] ?? null,
+                    'status' => \App\Enums\FollowStatus::PENDING->value,
+                ]
+            );
+        } else if ($request->has('follow_up') && empty($followUpData['scheduled_date'])) {
+            $consultation->followUps()->delete();
         }
 
         return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign', 'labRequest', 'prescription.items.medication', 'followUps'])]);

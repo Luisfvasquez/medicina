@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasPublicUuid;
 
 class TemplateItem extends Model
 {
@@ -16,6 +17,15 @@ class TemplateItem extends Model
         'duration',
         'notes',
     ];
+
+    protected $with = ['medication'];
+
+    protected $appends = ['medication_uuid'];
+
+    public function getMedicationUuidAttribute()
+    {
+        return $this->medication?->uuid;
+    }
 
     public function template()
     {

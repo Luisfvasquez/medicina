@@ -21,7 +21,11 @@ class AppointmentController extends Controller
         $status = $request->query('status');
         $search = $request->query('search');
 
-        $today = \Carbon\Carbon::today()->toDateString();
+        $timezone = $request->header('X-Timezone') ?? $request->input('timezone') ?? 'America/Caracas';
+        if (!in_array($timezone, timezone_identifiers_list(), true)) {
+            $timezone = 'America/Caracas';
+        }
+        $today = \Carbon\Carbon::today($timezone)->toDateString();
 
         $query = Appointment::with(['patient', 'doctor', 'clinicBranch'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
@@ -81,28 +85,46 @@ class AppointmentController extends Controller
     public function store(StoreAppointmentRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $doctorId = $validated['user_id'];
+        $doctorUuid = $validated['user_id'];
+        $patientUuid = $validated['patient_id'];
+        $clinicBranchUuid = $validated['clinic_branch_id'] ?? null;
+
+        // Resolve internal models and IDs
+        $doctor = \App\Models\User::where('uuid', $doctorUuid)->firstOrFail();
+        $patient = \App\Models\Patient::where('uuid', $patientUuid)->firstOrFail();
+        $clinicBranch = $clinicBranchUuid 
+            ? \App\Models\ClinicBranch::where('uuid', $clinicBranchUuid)->first()
+            : null;
+
         $date = $validated['date'];
         $time = $validated['time'];
-        $clinicBranchId = $validated['clinic_branch_id'] ?? null;
+        $isEmergency = ($validated['type'] ?? '') === 'EXCEPTION' || $request->input('is_emergency') === true;
 
-        // Validate slot availability (pass branch_id if provided)
-        $availabilityService = app(AvailabilityService::class);
-        try {
-            $branchId = $clinicBranchId
-                ? \App\Models\ClinicBranch::where('uuid', $clinicBranchId)->first()?->id
-                : null;
-            $availabilityService->validateAppointment($doctorId, $date, $time, null, $branchId);
-        } catch (AvailabilityException $e) {
-            return response()->json([
-                'error' => 'Slot no disponible',
-                'code' => $e->code,
-                'message' => $e->getMessage(),
-            ], 409);
+        if (!$isEmergency) {
+            // Validate slot availability (pass branch_id if provided)
+            $availabilityService = app(AvailabilityService::class);
+            try {
+                $availabilityService->validateAppointment($doctor->id, $date, $time, null, $clinicBranch?->id);
+            } catch (AvailabilityException $e) {
+                return response()->json([
+                    'error' => 'Slot no disponible',
+                    'code' => $e->code,
+                    'message' => $e->getMessage(),
+                ], 409);
+            }
         }
 
         // Normalize slot_time
         $validated['slot_time'] = \Carbon\Carbon::parse($time)->format('H:i:s');
+
+        // Map public UUIDs to internal IDs
+        $validated['user_id'] = $doctor->id;
+        $validated['patient_id'] = $patient->id;
+        $validated['clinic_branch_id'] = $clinicBranch?->id;
+
+        if ($isEmergency) {
+            $validated['status'] = \App\Enums\AppointmentStatus::IN_PROGRESS->value;
+        }
 
         $appointment = Appointment::create($validated);
 
@@ -200,7 +222,11 @@ class AppointmentController extends Controller
             return null;
         }
 
-        $today = \Carbon\Carbon::today()->toDateString();
+        $timezone = request()->header('X-Timezone') ?? request()->input('timezone') ?? 'America/Caracas';
+        if (!in_array($timezone, timezone_identifiers_list(), true)) {
+            $timezone = 'America/Caracas';
+        }
+        $today = \Carbon\Carbon::today($timezone)->toDateString();
 
         // 1. Estilo de vida
         $lifestyleModel = \App\Models\Lifestyle::where('patient_id', $patient->id)->first();

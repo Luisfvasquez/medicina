@@ -45,7 +45,7 @@ class MedicationController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $medication = Medication::with('user')->findOrFail($id);
+        $medication = Medication::with('user')->where('uuid', $id)->firstOrFail();
 
         if ($medication->user_id && $medication->user_id !== auth('user_api')->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -56,7 +56,7 @@ class MedicationController extends Controller
 
     public function update(UpdateMedicationRequest $request, string $id): JsonResponse
     {
-        $medication = Medication::findOrFail($id);
+        $medication = Medication::where('uuid', $id)->firstOrFail();
 
         if ($medication->user_id !== auth('user_api')->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -67,9 +67,56 @@ class MedicationController extends Controller
         return response()->json(['data' => $medication->load('user')]);
     }
 
+    public function topPrescribed(Request $request): JsonResponse
+    {
+        $doctorId = auth('user_api')->id();
+
+        $topMeds = \App\Models\PrescriptionItem::select('medication_id', \DB::raw('count(*) as count'))
+            ->whereHas('prescription', function ($q) use ($doctorId) {
+                $q->where('user_id', $doctorId);
+            })
+            ->groupBy('medication_id')
+            ->orderByDesc('count')
+            ->limit(3)
+            ->get();
+
+        $results = [];
+        $maxCount = 1;
+        if ($topMeds->isNotEmpty()) {
+            $maxCount = $topMeds->first()->count;
+        }
+
+        foreach ($topMeds as $item) {
+            $med = Medication::find($item->medication_id);
+            if ($med) {
+                $results[] = [
+                    'name' => $med->commercial_name ?: $med->active_principle,
+                    'count' => (int) $item->count,
+                    'percentage' => (int) round(($item->count / $maxCount) * 100),
+                ];
+            }
+        }
+
+        if (empty($results)) {
+            $meds = Medication::whereNull('user_id')
+                ->orWhere('user_id', $doctorId)
+                ->limit(3)
+                ->get();
+            foreach ($meds as $idx => $med) {
+                $results[] = [
+                    'name' => $med->commercial_name ?: $med->active_principle,
+                    'count' => 0,
+                    'percentage' => $idx === 0 ? 80 : ($idx === 1 ? 50 : 30),
+                ];
+            }
+        }
+
+        return response()->json(['data' => $results]);
+    }
+
     public function destroy(string $id): JsonResponse
     {
-        $medication = Medication::findOrFail($id);
+        $medication = Medication::where('uuid', $id)->firstOrFail();
 
         if ($medication->user_id !== auth('user_api')->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);

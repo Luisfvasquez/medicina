@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Auth\PatientAuthController;
 use App\Http\Controllers\Api\V1\Auth\UserAuthController;
 use App\Http\Controllers\Api\V1\ConsultationController;
 use App\Http\Controllers\Api\V1\ConsultationLabRequestController;
+use App\Http\Controllers\Api\V1\LabRequestController;
 use App\Http\Controllers\Api\V1\ConsultationVitalSignController;
 use App\Http\Controllers\Api\V1\FollowUpController;
 use App\Http\Controllers\Api\V1\FormTemplateController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\V1\PatientFamilyHistoryController;
 use App\Http\Controllers\Api\V1\PatientSurgicalHistoryController;
 use App\Http\Controllers\Api\V1\PatientVaccinationController;
 use App\Http\Controllers\Api\V1\DocumentUploadController;
+use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\DoctorDashboardController;
 use App\Http\Controllers\Api\V1\Phase3\MedicalDocumentController;
 use App\Http\Controllers\Api\V1\Phase3\MedicationController;
@@ -180,6 +182,14 @@ Route::prefix('v1')->group(function () {
         Route::put('consultations/{consultation}/lab-requests/{lab_request}', [ConsultationLabRequestController::class, 'update']);
         Route::patch('consultations/{consultation}/lab-requests/{lab_request}', [ConsultationLabRequestController::class, 'update']);
 
+        // Standalone: LabRequests CRUD - idempotent store
+        Route::get('lab-requests', [LabRequestController::class, 'index']);
+        Route::post('lab-requests', [LabRequestController::class, 'store'])->middleware('idempotent');
+        Route::get('lab-requests/{lab_request}', [LabRequestController::class, 'show']);
+        Route::put('lab-requests/{lab_request}', [LabRequestController::class, 'update']);
+        Route::patch('lab-requests/{lab_request}', [LabRequestController::class, 'update']);
+        Route::delete('lab-requests/{lab_request}', [LabRequestController::class, 'destroy']);
+
         // Patient-scoped: MedicalBackground - idempotent store
         Route::get('patients/{patient}/medical-background', [MedicalBackgroundController::class, 'show']);
         Route::post('patients/{patient}/medical-background', [MedicalBackgroundController::class, 'store'])->middleware('idempotent');
@@ -222,7 +232,16 @@ Route::prefix('v1')->group(function () {
         Route::patch('patients/{patient}/vaccinations/{vaccination}', [PatientVaccinationController::class, 'update']);
         Route::delete('patients/{patient}/vaccinations/{vaccination}', [PatientVaccinationController::class, 'destroy']);
 
+        // Patients CRUD
+        Route::get('patients', [PatientController::class, 'index']);
+        Route::post('patients', [PatientController::class, 'store'])->middleware('idempotent');
+        Route::get('patients/{patient}', [PatientController::class, 'show']);
+        Route::put('patients/{patient}', [PatientController::class, 'update']);
+        Route::patch('patients/{patient}', [PatientController::class, 'update']);
+        Route::delete('patients/{patient}', [PatientController::class, 'destroy']);
+
         // Phase 3: Medications / Vademécum
+        Route::get('medications/top-prescribed', [MedicationController::class, 'topPrescribed']);
         Route::get('medications', [MedicationController::class, 'index']);
         Route::post('medications', [MedicationController::class, 'store'])->middleware('idempotent');
         Route::get('medications/{medication}', [MedicationController::class, 'show']);

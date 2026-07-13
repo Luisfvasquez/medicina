@@ -104,11 +104,11 @@ class SyncService
         'family_histories'       => [FamilyHistory::class,       ['condition', 'relationship', 'note'],                                                                  'patient_uuid', Patient::class],
         'vaccinations'           => [Vaccination::class,         ['vaccine', 'dose_number', 'date'],                                                                     'patient_uuid', Patient::class],
         'prescriptions'          => [Prescription::class,        ['consultation_id', 'clinic_branch_id', 'date', 'expiration_date', 'notes', 'public_token', 'status'], 'patient_uuid', Patient::class],
-        'follow_ups'             => [FollowUp::class,            ['consultation_id', 'scheduled_date', 'status', 'response'],                                           'patient_uuid', Patient::class],
+        'follow_ups'             => [FollowUp::class,            ['consultation_id', 'scheduled_date', 'status', 'response', 'channel', 'message_template'],            [['patient_uuid', Patient::class], ['consultation_uuid', Consultation::class]]],
         'invoices'               => [Invoice::class,             ['patient_account_id', 'clinic_branch_id', 'consultation_id', 'prescription_id', 'subtotal', 'tax', 'discount', 'total', 'currency', 'status', 'due_date', 'notes'], 'patient_uuid', Patient::class],
         'quote_requests'         => [QuoteRequest::class,        ['city_id', 'status'],                                                                    [['patient_uuid', Patient::class], ['prescription_uuid', Prescription::class]]],
         'vital_signs'            => [VitalSign::class,           ['patient_id', 'weight', 'height', 'systolic_bp', 'diastolic_bp', 'heart_rate', 'respiratory_rate', 'temperature', 'oxygen_sat', 'date'], 'consultation_uuid', Consultation::class],
-        'lab_requests'           => [LabRequest::class,          ['exams_list', 'instructions', 'is_completed'],                                                          'consultation_uuid', Consultation::class],
+        'lab_requests'           => [LabRequest::class,          ['exams_list', 'instructions', 'is_completed'],                                                          [['consultation_uuid', Consultation::class], ['patient_uuid', Patient::class]]],
         'prescription_items'     => [PrescriptionItem::class,    ['medication_id', 'dose', 'frequency', 'duration', 'quantity', 'notes'],                                'prescription_uuid', Prescription::class],
         'lab_results'            => [LabResult::class,           ['patient_id', 'file_url', 'result_json', 'notes', 'reviewed_by', 'reviewed_at', 'status', 'performed_at'], 'lab_request_uuid', LabRequest::class],
         'invoice_items'          => [InvoiceItem::class,         ['description', 'quantity', 'unit_price', 'total'],                                                      'invoice_uuid', Invoice::class],
@@ -195,7 +195,7 @@ class SyncService
                     $uuidMaps[LabRequest::class] = $this->buildFkMapFromPush($push, LabRequest::class, 'lab_request_uuid');
                 }
                 // For entities that depend on Consultation, ensure the map exists
-                if (in_array($entity, ['vital_signs', 'lab_requests'], true) && ! isset($uuidMaps[Consultation::class])) {
+                if (in_array($entity, ['vital_signs', 'lab_requests', 'follow_ups'], true) && ! isset($uuidMaps[Consultation::class])) {
                     $uuidMaps[Consultation::class] = $this->buildFkMapFromPush($push, Consultation::class, 'consultation_uuid');
                 }
 
@@ -646,13 +646,35 @@ class SyncService
         foreach ($items as $item) {
             $itemUuid = $item['uuid'];
 
+            if (! $this->isValidUuid($itemUuid)) {
+                $result['errors'][] = [
+                    'uuid'    => $itemUuid,
+                    'field'   => 'uuid',
+                    'message' => 'Invalid UUID format.',
+                ];
+                continue;
+            }
+
             // Resolve all FK references
             $fkData = [];
             foreach ($fkMaps as $uuidField => $idMap) {
                 $uuidValue = $item[$uuidField] ?? null;
                 $idField   = $this->uuidFieldToIdField($uuidField);
 
-                if (! $uuidValue || ! isset($idMap[$uuidValue])) {
+                if ($uuidValue === null || $uuidValue === '') {
+                    continue; // Skip optional relationship resolution
+                }
+
+                if (! $this->isValidUuid($uuidValue)) {
+                    $result['errors'][] = [
+                        'uuid'    => $itemUuid,
+                        'field'   => $uuidField,
+                        'message' => 'Invalid UUID format for ' . $this->fkLabel($uuidField) . '.',
+                    ];
+                    continue 2; // Skip to next item
+                }
+
+                if (! isset($idMap[$uuidValue])) {
                     $result['errors'][] = [
                         'uuid'    => $itemUuid,
                         'field'   => $uuidField,
@@ -834,11 +856,57 @@ class SyncService
 
         foreach (self::PUSH_ENTITIES_ORDERED as $entity) {
             $modelClass = $pushModels[$entity];
-            $records = $modelClass::where('updated_at', '>', $ts)
+            
+            // Eager load relations if they exist on the model
+            $relations = [];
+            $dummyInstance = new $modelClass();
+            if (method_exists($dummyInstance, 'patient')) {
+                $relations[] = 'patient';
+            }
+            if (method_exists($dummyInstance, 'user')) {
+                $relations[] = 'user';
+            }
+            if (method_exists($dummyInstance, 'prescription')) {
+                $relations[] = 'prescription';
+            }
+            if (method_exists($dummyInstance, 'consultation')) {
+                $relations[] = 'consultation';
+            }
+            if (method_exists($dummyInstance, 'labRequest')) {
+                $relations[] = 'labRequest';
+            }
+
+            $query = count($relations) > 0 
+                ? $modelClass::with($relations) 
+                : $modelClass::query();
+
+            $records = $query->where('updated_at', '>', $ts)
                 ->limit($limit)
                 ->get()
-                ->map(fn ($r) => $r->toArray())
+                ->map(function ($r) use ($entity) {
+                    $data = $r->toArray();
+                    
+                    // Map relationship database IDs to frontend UUIDs
+                    if (isset($r->patient->uuid)) {
+                        $data['patient_uuid'] = $r->patient->uuid;
+                    }
+                    if (isset($r->user->uuid)) {
+                        $data['doctor_uuid'] = $r->user->uuid;
+                    }
+                    if (isset($r->prescription->uuid)) {
+                        $data['prescription_uuid'] = $r->prescription->uuid;
+                    }
+                    if (isset($r->consultation->uuid)) {
+                        $data['consultation_uuid'] = $r->consultation->uuid;
+                    }
+                    if (isset($r->labRequest->uuid)) {
+                        $data['lab_request_uuid'] = $r->labRequest->uuid;
+                    }
+                    
+                    return $data;
+                })
                 ->toArray();
+
             if (count($records) >= $limit) {
                 $hasMore = true;
             }
@@ -852,6 +920,14 @@ class SyncService
     //  Helpers
     // -------------------------------------------------------------------------
 
+    private function isValidUuid($uuid): bool
+    {
+        if (! is_string($uuid)) {
+            return false;
+        }
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1;
+    }
+
     /** Build a UUID→ID map from an array of pushed items for a given model. */
     private function buildModelUuidMap(string $modelClass, array $items): array
     {
@@ -861,6 +937,11 @@ class SyncService
         }
 
         $uuids = array_column($items, 'uuid');
+        $uuids = array_filter($uuids, fn($u) => $this->isValidUuid($u));
+        if (empty($uuids)) {
+            return [];
+        }
+
         $records = $modelClass::whereIn('uuid', $uuids)->get();
         foreach ($records as $record) {
             $map[$record->uuid] = $record->id;
@@ -902,6 +983,7 @@ class SyncService
             }
         }
 
+        $uuids = array_filter($uuids, fn($u) => $this->isValidUuid($u));
         if (empty($uuids)) {
             return [];
         }
@@ -942,6 +1024,7 @@ class SyncService
             }
         }
 
+        $uuids = array_filter($uuids, fn($u) => $this->isValidUuid($u));
         if (empty($uuids)) {
             return [];
         }

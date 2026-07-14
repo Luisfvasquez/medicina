@@ -51,6 +51,7 @@ use App\Http\Controllers\Api\V1\Scheduling\ScheduleController;
 use App\Http\Controllers\Api\V1\Scheduling\ClinicScheduleController;
 use App\Http\Controllers\Api\V1\SpecialtyController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
@@ -108,6 +109,10 @@ Route::prefix('v1')->group(function () {
     Route::get('locations/cities', [LocationController::class, 'cities']);
     Route::get('specialties', [SpecialtyController::class, 'index']);
 
+    // Services routes
+    Route::get('services/global', [ServiceController::class, 'globalIndex']);
+    Route::get('services/provider/{providerUuid}', [ServiceController::class, 'providerIndex']);
+
     // Public Catalog (no auth required)
     Route::get('public/doctors', [PublicCatalogController::class, 'doctors']);
     Route::get('public/pharmacies', [PublicCatalogController::class, 'pharmacies']);
@@ -130,6 +135,11 @@ Route::prefix('v1')->group(function () {
         Route::get('clinic-schedules/{clinicBranch}', [ClinicScheduleController::class, 'show']);
         Route::post('clinic-schedules/{clinicBranch}', [ClinicScheduleController::class, 'store']);
         Route::delete('clinic-schedules/{clinicBranch}/{weekday}', [ClinicScheduleController::class, 'destroy']);
+
+        // Services management
+        Route::post('services/provider-services', [ServiceController::class, 'storeProviderService']);
+        Route::put('services/provider-services/{uuid}', [ServiceController::class, 'updateProviderService']);
+        Route::delete('services/provider-services/{uuid}', [ServiceController::class, 'destroyProviderService']);
     });
 
     // Sync (offline-first bulk push/pull) - accepts both user_api and patient_api tokens

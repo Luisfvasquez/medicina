@@ -35,8 +35,10 @@ class OtpService
             ->active()
             ->update(['verified_at' => now()]);
 
-        // Generate 6-digit code
-        $plainCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Generate code with configurable length
+        $length = (int) config('otp.code_length', 6);
+        $maxRandom = (int) str_repeat('9', $length);
+        $plainCode = str_pad((string) random_int(0, $maxRandom), $length, '0', STR_PAD_LEFT);
         $codeHash  = hash('sha256', $plainCode);
         $expirySec = (int) config('otp.expiry_seconds', 180);
 

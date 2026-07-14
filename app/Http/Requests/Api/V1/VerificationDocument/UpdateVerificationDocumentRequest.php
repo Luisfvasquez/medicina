@@ -14,7 +14,8 @@ class UpdateVerificationDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file_url' => 'nullable|url',
+            'file_url' => 'required_without:file|nullable|url',
+            'file' => 'required_without:file_url|nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
             'status' => 'nullable|in:PENDING,APPROVED,REJECTED',
             'comments' => 'nullable|string',
         ];

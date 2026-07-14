@@ -15,6 +15,7 @@ class Appointment extends Model
         'patient_id',
         'user_id',
         'clinic_branch_id',
+        'provider_service_id',
         'date',
         'time',
         'slot_time',
@@ -44,6 +45,11 @@ class Appointment extends Model
     public function clinicBranch()
     {
         return $this->belongsTo(ClinicBranch::class);
+    }
+
+    public function providerService()
+    {
+        return $this->belongsTo(ProviderService::class);
     }
 
     public function consultation()

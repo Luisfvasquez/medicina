@@ -66,7 +66,7 @@ class PatientInvoiceController extends Controller
             $file = $request->file('receipt');
             $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
             $folder = sprintf('payment_receipts/%s', $invoice->uuid);
-            $receiptPath = Storage::disk('public')->putFileAs($folder, $file, $safeName);
+            $receiptPath = Storage::disk(config('filesystems.default'))->putFileAs($folder, $file, $safeName);
         }
 
         $payment = Payment::create([

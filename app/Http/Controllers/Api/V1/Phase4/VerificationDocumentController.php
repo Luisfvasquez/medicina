@@ -26,7 +26,26 @@ class VerificationDocumentController extends Controller
         $data = $request->validated();
         $data['user_id'] = auth('user_api')->id();
 
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $uuid = (string) \Illuminate\Support\Str::uuid();
+            $path = sprintf('verification_documents/%s/%s', $data['user_id'], $uuid);
+
+            $storedPath = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->putFileAs($path, $file, $safeName);
+
+            $data['file_url'] = $storedPath;
+        }
+
         $document = VerificationDocument::create($data);
+
+        // Audit Log
+        \App\Models\AuditLog::logCreate(
+            auth('user_api')->user(),
+            'VerificationDocument',
+            $document->id,
+            $document->toArray()
+        );
 
         return response()->json(['data' => $document], 201);
     }
@@ -44,12 +63,45 @@ class VerificationDocumentController extends Controller
         $document = VerificationDocument::where('user_id', auth('user_api')->id())
             ->findOrFail($id);
 
-        // Users can only update documents in PENDING status
-        if ($document->status !== 'PENDING') {
-            return response()->json(['error' => 'Cannot update document with status: ' . $document->status], 422);
+        $status = $document->status instanceof \App\Enums\VerificationStatus 
+            ? $document->status->value 
+            : $document->status;
+
+        // Permitir actualizar si está PENDING o REJECTED
+        if ($status !== 'PENDING' && $status !== 'REJECTED') {
+            return response()->json(['error' => 'Cannot update document with status: ' . $status], 422);
         }
 
-        $document->update($request->validated());
+        $oldData = $document->toArray();
+        $updateData = $request->validated();
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $uuid = (string) \Illuminate\Support\Str::uuid();
+            $path = sprintf('verification_documents/%s/%s', $document->user_id, $uuid);
+
+            $storedPath = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->putFileAs($path, $file, $safeName);
+
+            $updateData['file_url'] = $storedPath;
+        }
+
+        // Si estaba REJECTED, vuelve a PENDING y limpia comentarios
+        if ($status === 'REJECTED') {
+            $updateData['status'] = 'PENDING';
+            $updateData['comments'] = null;
+        }
+
+        $document->update($updateData);
+
+        // Audit Log
+        \App\Models\AuditLog::logUpdate(
+            auth('user_api')->user(),
+            'VerificationDocument',
+            $document->id,
+            $oldData,
+            $document->toArray()
+        );
 
         return response()->json(['data' => $document]);
     }

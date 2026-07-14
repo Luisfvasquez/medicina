@@ -15,7 +15,8 @@ class StoreVerificationDocumentRequest extends FormRequest
     {
         return [
             'type' => 'required|in:MEDICAL_LICENSE,NATIONAL_ID,BUSINESS_RIF',
-            'file_url' => 'required|url',
+            'file_url' => 'required_without:file|nullable|url',
+            'file' => 'required_without:file_url|nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
         ];
     }
 }

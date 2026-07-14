@@ -25,6 +25,7 @@ class Consultation extends Model
         'diagnosis',
         'treatment_plan',
         'dynamic_data',
+        'services_performed',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class Consultation extends Model
             'date' => 'datetime',
             'status' => ConsultationStatus::class,
             'dynamic_data' => 'array',
+            'services_performed' => 'array',
         ];
     }
 

@@ -60,6 +60,7 @@ class ConsultationController extends Controller
             'diagnosis' => $request->diagnosis,
             'treatment_plan' => $request->treatment_plan,
             'dynamic_data' => $request->dynamic_data,
+            'services_performed' => $request->services_performed,
         ]);
 
         if ($appointment) {
@@ -139,11 +140,14 @@ class ConsultationController extends Controller
             );
         }
 
-        // Si el estado pasa a completed, actualizar la cita correspondiente
+        // Si el estado pasa a completed, actualizar la cita correspondiente y generar pre-factura interna
         if ($consultation->status === \App\Enums\ConsultationStatus::COMPLETED || $request->input('status') === 'completed') {
             if ($consultation->appointment) {
                 $consultation->appointment->update(['status' => 'completed']);
             }
+
+            // Generar factura interna administrativa
+            $this->createInternalInvoice($consultation);
         }
 
         // Procesar recetas si se envían en el request
@@ -217,5 +221,78 @@ class ConsultationController extends Controller
         $consultation->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function createInternalInvoice(Consultation $consultation): void
+    {
+        // Verificar si ya tiene factura interna para no duplicar
+        $exists = \App\Models\Invoice::where('consultation_id', $consultation->id)
+            ->where('type', 'INTERNAL')
+            ->exists();
+        if ($exists) {
+            return;
+        }
+
+        // Calcular costo de la consulta (base: $50)
+        $subtotal = 50.00;
+        
+        // Sumar costo de servicios realizados
+        $items = [];
+        $items[] = [
+            'description' => 'Consulta Médica de Control',
+            'quantity' => 1,
+            'unit_price' => 50.00,
+            'total' => 50.00,
+        ];
+
+        $servicesPerformed = $consultation->services_performed;
+        if (is_array($servicesPerformed)) {
+            foreach ($servicesPerformed as $sp) {
+                $price = isset($sp['price']) ? (float)$sp['price'] : 0.00;
+                $qty = isset($sp['qty']) ? (int)$sp['qty'] : 1;
+                $name = $sp['name'] ?? 'Procedimiento Médico';
+                
+                $totalItem = $price * $qty;
+                $subtotal += $totalItem;
+
+                $items[] = [
+                    'description' => $name,
+                    'quantity' => $qty,
+                    'unit_price' => $price,
+                    'total' => $totalItem,
+                ];
+            }
+        }
+
+        // Crear la factura
+        $invoice = \App\Models\Invoice::create([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $consultation->user_id,
+            'patient_id' => $consultation->patient_id,
+            'patient_account_id' => $consultation->patient_account_id,
+            'clinic_branch_id' => $consultation->clinic_branch_id,
+            'consultation_id' => $consultation->id,
+            'subtotal' => $subtotal,
+            'tax' => 0.00,
+            'discount' => 0.00,
+            'total' => $subtotal,
+            'currency' => 'USD',
+            'status' => \App\Enums\InvoiceStatus::PAID,
+            'due_date' => \Carbon\Carbon::now(),
+            'notes' => 'Factura administrativa interna de honorarios y procedimientos.',
+            'type' => 'INTERNAL',
+        ]);
+
+        // Crear los items de la factura
+        foreach ($items as $item) {
+            \App\Models\InvoiceItem::create([
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'invoice_id' => $invoice->id,
+                'description' => $item['description'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'total' => $item['total'],
+            ]);
+        }
     }
 }

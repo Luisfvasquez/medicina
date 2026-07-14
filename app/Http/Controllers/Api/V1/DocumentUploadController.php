@@ -29,7 +29,7 @@ class DocumentUploadController extends Controller
         $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
         $path = sprintf('medical_documents/%s/%s', $user->id, $document->uuid);
 
-        $storedPath = Storage::disk('local')->putFileAs($path, $file, $safeName);
+        $storedPath = Storage::disk(config('filesystems.default'))->putFileAs($path, $file, $safeName);
 
         $document->update([
             'pending_upload' => false,

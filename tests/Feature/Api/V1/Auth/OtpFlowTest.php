@@ -128,7 +128,8 @@ class OtpFlowTest extends TestCase
 
     public function test_verify_otp_correct_code_returns_200_with_cookie(): void
     {
-        $plainCode = '123456';
+        $length = (int) config('otp.code_length', 8);
+        $plainCode = str_repeat('1', $length);
         $codeHash  = hash('sha256', $plainCode);
 
         OtpCode::create([
@@ -156,7 +157,9 @@ class OtpFlowTest extends TestCase
 
     public function test_verify_otp_incorrect_code_returns_401(): void
     {
-        $plainCode = '123456';
+        $length = (int) config('otp.code_length', 8);
+        $plainCode = str_repeat('1', $length);
+        $wrongCode = str_repeat('9', $length);
         $codeHash  = hash('sha256', $plainCode);
 
         OtpCode::create([
@@ -170,7 +173,7 @@ class OtpFlowTest extends TestCase
 
         $response = $this->postJson('/api/v1/auth/verify-otp', [
             'phone' => '+584121234567',
-            'code'  => '999999',
+            'code'  => $wrongCode,
         ]);
 
         $response->assertStatus(401)
@@ -183,7 +186,8 @@ class OtpFlowTest extends TestCase
 
     public function test_verify_otp_expired_code_returns_401(): void
     {
-        $plainCode = '123456';
+        $length = (int) config('otp.code_length', 8);
+        $plainCode = str_repeat('1', $length);
         $codeHash  = hash('sha256', $plainCode);
 
         OtpCode::create([
@@ -209,9 +213,12 @@ class OtpFlowTest extends TestCase
 
     public function test_verify_otp_no_code_returns_404(): void
     {
+        $length = (int) config('otp.code_length', 8);
+        $plainCode = str_repeat('1', $length);
+
         $response = $this->postJson('/api/v1/auth/verify-otp', [
             'phone' => '+584121234567',
-            'code'  => '123456',
+            'code'  => $plainCode,
         ]);
 
         $response->assertStatus(404)
@@ -223,7 +230,8 @@ class OtpFlowTest extends TestCase
 
     public function test_verify_otp_includes_auth_cookie(): void
     {
-        $plainCode = '123456';
+        $length = (int) config('otp.code_length', 8);
+        $plainCode = str_repeat('1', $length);
         $codeHash  = hash('sha256', $plainCode);
 
         OtpCode::create([

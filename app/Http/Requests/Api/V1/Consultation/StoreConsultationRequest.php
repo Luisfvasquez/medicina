@@ -24,6 +24,8 @@ class StoreConsultationRequest extends FormRequest
             'physical_exam' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'treatment_plan' => 'nullable|string',
+            'dynamic_data' => 'nullable|array',
+            'services_performed' => 'nullable|array',
             'vitals' => 'nullable|array',
             'vitals.weight' => 'nullable|numeric',
             'vitals.height' => 'nullable|numeric',

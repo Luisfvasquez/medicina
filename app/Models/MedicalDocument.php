@@ -11,6 +11,8 @@ class MedicalDocument extends Model
 {
     use HasPublicUuid, SoftDeletes;
 
+    protected $appends = ['file_url'];
+
     protected $fillable = [
         'uuid',
         'user_id',
@@ -53,5 +55,27 @@ class MedicalDocument extends Model
     public function clinicBranch()
     {
         return $this->belongsTo(ClinicBranch::class, 'clinic_branch_id');
+    }
+
+    public function getFileUrlAttribute(): ?string
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+
+        $disk = config('filesystems.default');
+
+        if ($disk === 'r2' || $disk === 's3') {
+            try {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                    $this->file_path,
+                    \Carbon\Carbon::now()->addMinutes(15)
+                );
+            } catch (\Throwable $e) {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->url($this->file_path);
+            }
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($disk)->url($this->file_path);
     }
 }

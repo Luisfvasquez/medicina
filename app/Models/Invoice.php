@@ -26,6 +26,7 @@ class Invoice extends Model
         'status',
         'due_date',
         'notes',
+        'type',
     ];
 
     protected function casts(): array

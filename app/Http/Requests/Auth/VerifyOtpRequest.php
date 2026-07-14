@@ -22,7 +22,7 @@ class VerifyOtpRequest extends FormRequest
                 'required_without:phone',
                 'email',
             ],
-            'code'  => ['required', 'digits:6'],
+            'code'  => ['required', 'digits:' . config('otp.code_length', 8)],
             'role'  => ['sometimes', 'in:DOCTOR,PATIENT,PROVIDER,ADMIN'],
         ];
     }
@@ -35,7 +35,7 @@ class VerifyOtpRequest extends FormRequest
             'email.required_without'  => 'El teléfono o correo es requerido.',
             'email.email'             => 'El correo ingresado no tiene un formato válido.',
             'code.required'           => 'El código de verificación es requerido.',
-            'code.digits'            => 'El código debe ser de exactamente 6 dígitos.',
+            'code.digits'            => 'El código debe ser de exactamente ' . config('otp.code_length', 8) . ' dígitos.',
         ];
     }
 

@@ -49,6 +49,7 @@ class UserAuthController extends Controller
                 'email' => $request->email,
                 'password_hash' => Hash::make($request->password),
                 'phone' => $request->phone,
+                'national_id' => $request->nationalId,
                 'role' => 'DOCTOR',
                 'is_active' => true,
                 'plan_type' => 'FREE',
@@ -84,7 +85,7 @@ class UserAuthController extends Controller
             ]);
 
             // Manejo de archivo omitido en esta fase inicial, se guardaría en storage real.
-            $path = $request->file('medicalLicense')->store('licenses', 'local');
+            $path = $request->file('medicalLicense')->store('licenses', config('filesystems.default', 'local'));
 
             VerificationDocument::create([
                 'user_id' => $user->id,
@@ -130,6 +131,7 @@ class UserAuthController extends Controller
                 'email' => $request->email,
                 'password_hash' => Hash::make($request->password),
                 'phone' => $request->phone,
+                'national_id' => $request->nationalId,
                 'role' => 'PROVIDER',
                 'is_active' => true,
                 'plan_type' => 'FREE',
@@ -144,7 +146,7 @@ class UserAuthController extends Controller
                 'is_verified' => false,
             ]);
 
-            $path = $request->file('businessDocument')->store('business_docs', 'local');
+            $path = $request->file('businessDocument')->store('business_docs', config('filesystems.default', 'local'));
 
             // CLINIC / LABORATORY → COMMERCIAL_REGISTER, PHARMACY → BUSINESS_RIF
             $docType = in_array($request->providerType, ['CLINIC', 'LABORATORY'])
@@ -269,7 +271,31 @@ class UserAuthController extends Controller
             }
         }
 
+        $oldData = $user->toArray();
         $user->update($userData);
+
+        $criticalChanges = [];
+        $oldCritical = [];
+
+        if (isset($userData['signature_url']) && $userData['signature_url'] !== ($oldData['signature_url'] ?? null)) {
+            $criticalChanges['signature_url'] = $user->signature_url;
+            $oldCritical['signature_url'] = $oldData['signature_url'] ?? null;
+        }
+
+        if (isset($userData['logo_url']) && $userData['logo_url'] !== ($oldData['logo_url'] ?? null)) {
+            $criticalChanges['logo_url'] = $user->logo_url;
+            $oldCritical['logo_url'] = $oldData['logo_url'] ?? null;
+        }
+
+        if (!empty($criticalChanges)) {
+            \App\Models\AuditLog::logUpdate(
+                $user,
+                'User',
+                $user->id,
+                $oldCritical,
+                $criticalChanges
+            );
+        }
 
         $user->loadMissing('providerProfile');
         if ($user->providerProfile) {

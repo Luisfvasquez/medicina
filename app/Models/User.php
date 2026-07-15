@@ -18,6 +18,7 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
         'password_hash',
         'full_name',
         'phone',
+        'national_id',
         'role',
         'is_active',
         'status',
@@ -89,5 +90,57 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
     public function verificationDocuments()
     {
         return $this->hasMany(VerificationDocument::class);
+    }
+
+    public function getSignatureUrlAttribute($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        $disk = config('filesystems.default');
+
+        if ($disk === 'r2' || $disk === 's3') {
+            try {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                    $value,
+                    \Carbon\Carbon::now()->addDays(7)
+                );
+            } catch (\Throwable $e) {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
+            }
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
+    }
+
+    public function getLogoUrlAttribute($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        $disk = config('filesystems.default');
+
+        if ($disk === 'r2' || $disk === 's3') {
+            try {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                    $value,
+                    \Carbon\Carbon::now()->addDays(7)
+                );
+            } catch (\Throwable $e) {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
+            }
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
     }
 }

@@ -18,6 +18,7 @@ class DoctorRegisterRequest extends FormRequest
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
+            'nationalId' => 'nullable|string|max:50',
             'cityId' => 'nullable|uuid|exists:cities,uuid',
             'specialtyIds' => 'required|array|min:1',
             'specialtyIds.*' => 'exists:specialties,id',

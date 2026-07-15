@@ -32,9 +32,10 @@ trait HandlesImageUploads
             $fileName = Str::uuid() . '.' . $type;
             $path = $folder . '/' . $fileName;
 
-            Storage::disk('public')->put($path, $data);
+            $diskName = config('filesystems.default', 'public');
+            Storage::disk($diskName)->put($path, $data);
 
-            return asset('storage/' . $path);
+            return $path;
         }
 
         return null;

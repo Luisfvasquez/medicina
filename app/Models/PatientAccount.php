@@ -23,6 +23,10 @@ class PatientAccount extends Authenticatable implements JWTSubject
         'status',
     ];
 
+    protected $hidden = [
+        'password_hash',
+    ];
+
     public function patients()
     {
         return $this->hasMany(Patient::class);
@@ -63,5 +67,31 @@ class PatientAccount extends Authenticatable implements JWTSubject
             'is_active' => 'boolean',
             'status' => \App\Enums\AccountStatus::class,
         ];
+    }
+
+    public function getAvatarUrlAttribute($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        $disk = config('filesystems.default');
+
+        if ($disk === 'r2' || $disk === 's3') {
+            try {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                    $value,
+                    \Carbon\Carbon::now()->addDays(7)
+                );
+            } catch (\Throwable $e) {
+                return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
+            }
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
     }
 }

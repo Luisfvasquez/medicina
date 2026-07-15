@@ -56,5 +56,35 @@ class LocationSeeder extends Seeder
                 ]);
             }
         }
+
+        // 2. Colombia
+        $colombia = Country::create([
+            'uuid' => Str::uuid(),
+            'name' => 'Colombia',
+            'code' => 'CO'
+        ]);
+
+        $colombiaStates = [
+            'Cundinamarca' => ['Bogotá'],
+            'Antioquia' => ['Medellín', 'Envigado', 'Bello'],
+            'Valle del Cauca' => ['Cali', 'Palmira'],
+            'Atlántico' => ['Barranquilla'],
+            'Bolívar' => ['Cartagena'],
+            'Santander' => ['Bucaramanga'],
+        ];
+
+        foreach ($colombiaStates as $stateName => $cities) {
+            $state = $colombia->states()->create([
+                'uuid' => Str::uuid(),
+                'name' => $stateName
+            ]);
+
+            foreach ($cities as $cityName) {
+                $state->cities()->create([
+                    'uuid' => Str::uuid(),
+                    'name' => $cityName
+                ]);
+            }
+        }
     }
 }

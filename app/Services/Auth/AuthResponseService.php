@@ -29,13 +29,14 @@ class AuthResponseService
             $isVerified = $user->providerProfile ? (bool) $user->providerProfile->is_verified : false;
         }
 
-        $user->loadMissing(['providerProfile', 'city']);
+        $user->loadMissing(['providerProfile', 'city', 'verificationDocuments']);
 
         return [
             'id'              => $user->uuid,
             'fullName'        => $user->full_name,
             'email'           => $user->email,
             'phone'           => $user->phone,
+            'nationalId'      => $user->national_id,
             'role'            => $user->role->value,
             'isVerified'      => $isVerified,
             'logoUrl'         => $user->logo_url,
@@ -52,6 +53,17 @@ class AuthResponseService
                 'address'        => $user->providerProfile->address,
                 'phone'          => $user->providerProfile->phone,
             ] : null,
+            'verificationDocuments' => $user->verificationDocuments ? $user->verificationDocuments->map(function ($doc) {
+                return [
+                    'id'        => $doc->id,
+                    'uuid'      => $doc->uuid,
+                    'type'      => $doc->type,
+                    'status'    => $doc->status,
+                    'fileUrl'   => $doc->file_url,
+                    'comments'  => $doc->comments,
+                    'createdAt' => $doc->created_at?->toIso8601String(),
+                ];
+            }) : [],
         ];
     }
 

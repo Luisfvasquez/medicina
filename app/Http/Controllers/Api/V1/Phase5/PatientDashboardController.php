@@ -10,10 +10,11 @@ use App\Models\Prescription;
 use App\Models\VitalSign;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PatientDashboardController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $account = auth('patient_api')->user();
         if (!$account) {

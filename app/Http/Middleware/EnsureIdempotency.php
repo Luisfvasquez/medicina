@@ -36,8 +36,9 @@ class EnsureIdempotency
             ], 400);
         }
 
-        // Para evitar colisiones entre distintos endpoints con la misma llave accidental
-        $cacheKey = 'idempotency_' . md5($request->url()) . '_' . $idempotencyKey;
+        // Para evitar colisiones entre distintos endpoints y usuarios con la misma llave accidental
+        $userId = $request->user()?->id ?? 'anonymous';
+        $cacheKey = 'idempotency_' . $userId . '_' . md5($request->url()) . '_' . $idempotencyKey;
 
         if (Cache::has($cacheKey)) {
             $cachedResponse = Cache::get($cacheKey);

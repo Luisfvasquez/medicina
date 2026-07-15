@@ -56,10 +56,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
 
-    // ─── Nuevas rutas planas (contrato) ───────────────────────────────────
-    Route::post('send-otp',       [OtpController::class, 'send']);
-    Route::post('verify-otp',     [OtpController::class, 'verify']);
-    Route::post('login-password', [AuthController::class, 'loginPassword']);
+    // ─── Nuevas rutas planas (contrato) — throttled ───────────────────────
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('send-otp',       [OtpController::class, 'send']);
+        Route::post('verify-otp',     [OtpController::class, 'verify']);
+        Route::post('login-password', [AuthController::class, 'loginPassword']);
+    });
 
     Route::middleware('auth:user_api,patient_api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
@@ -68,7 +70,7 @@ Route::prefix('v1/auth')->group(function () {
 
     // ─── Backwards compat — deprecated con header Warning ──────────────────
     Route::prefix('users')->group(function () {
-        Route::middleware('idempotent')->group(function () {
+        Route::middleware(['idempotent', 'throttle:auth'])->group(function () {
             Route::post('register/doctor',   [UserAuthController::class, 'registerDoctor']);
             Route::post('register/provider',  [UserAuthController::class, 'registerProvider']);
             Route::post('login', [UserAuthController::class, 'login'])
@@ -87,7 +89,7 @@ Route::prefix('v1/auth')->group(function () {
     });
 
     Route::prefix('patients')->group(function () {
-        Route::middleware('idempotent')->group(function () {
+        Route::middleware(['idempotent', 'throttle:auth'])->group(function () {
             Route::post('register', [PatientAuthController::class, 'register']);
             Route::post('login',    [PatientAuthController::class, 'login'])
                 ->middleware('deprecated:Use POST /api/v1/auth/login-password');
@@ -106,6 +108,8 @@ Route::prefix('v1/auth')->group(function () {
 });
 
 Route::prefix('v1')->group(function () {
+    Route::get('locations/countries', [LocationController::class, 'countries']);
+    Route::get('locations/countries/{countryUuid}/cities', [LocationController::class, 'countryCities']);
     Route::get('locations/cities', [LocationController::class, 'cities']);
     Route::get('specialties', [SpecialtyController::class, 'index']);
 
@@ -142,10 +146,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('services/provider-services/{uuid}', [ServiceController::class, 'destroyProviderService']);
     });
 
-    // Sync (offline-first bulk push/pull) - accepts both user_api and patient_api tokens
-    Route::post('sync', [SyncController::class, 'sync']);
+    // Sync (offline-first bulk push/pull) - requires authentication
+    Route::middleware('auth:user_api,patient_api')->group(function () {
+        Route::post('sync', [SyncController::class, 'sync']);
+    });
 
-    Route::middleware('auth:user_api')->group(function () {
+    Route::middleware(['auth:user_api', 'user.status'])->group(function () {
         Route::get('doctor/dashboard', [DoctorDashboardController::class, 'index']);
 
         // Appointments - idempotent store
@@ -159,6 +165,7 @@ Route::prefix('v1')->group(function () {
         // FormTemplates - idempotent store
         Route::get('form-templates', [FormTemplateController::class, 'index']);
         Route::post('form-templates', [FormTemplateController::class, 'store'])->middleware('idempotent');
+        Route::post('form-templates/share', [\App\Http\Controllers\Api\V1\PatientFormRequestController::class, 'share']);
         Route::get('form-templates/{form_template}', [FormTemplateController::class, 'show']);
         Route::put('form-templates/{form_template}', [FormTemplateController::class, 'update']);
         Route::patch('form-templates/{form_template}', [FormTemplateController::class, 'update']);
@@ -304,10 +311,10 @@ Route::prefix('v1')->group(function () {
 
         // Phase 4: Notifications (user's own)
         Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::get('notifications/{notification}', [NotificationController::class, 'show']);
         Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
         Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
-        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
 
         // Phase 4: Verification Documents
         Route::get('verification-documents', [VerificationDocumentController::class, 'index']);
@@ -324,15 +331,15 @@ Route::prefix('v1')->group(function () {
         Route::patch('lab-results/{lab_result}', [LabResultController::class, 'update']);
         Route::post('lab-results/{lab_result}/review', [LabResultController::class, 'markAsReviewed']);
 
-        // Phase 4: Pharmacy Inventory
+        // Phase 4: Pharmacy Inventory (alerts BEFORE wildcard to avoid route shadowing)
         Route::get('pharmacy-inventories', [PharmacyInventoryController::class, 'index']);
         Route::post('pharmacy-inventories', [PharmacyInventoryController::class, 'store'])->middleware('idempotent');
+        Route::get('pharmacy-inventories/alerts/low-stock', [PharmacyInventoryController::class, 'lowStockAlerts']);
+        Route::get('pharmacy-inventories/alerts/expired', [PharmacyInventoryController::class, 'expired']);
         Route::get('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'show']);
         Route::put('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);
         Route::patch('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);
         Route::delete('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'destroy']);
-        Route::get('pharmacy-inventories/alerts/low-stock', [PharmacyInventoryController::class, 'lowStockAlerts']);
-        Route::get('pharmacy-inventories/alerts/expired', [PharmacyInventoryController::class, 'expired']);
 
         // Phase 4: Invoices
         Route::get('invoices', [InvoiceController::class, 'index']);
@@ -368,8 +375,14 @@ Route::prefix('v1')->group(function () {
     });
 
     // Phase 5: Patient Portal (auth:patient_api)
-    Route::prefix('patients/me')->middleware('auth:patient_api')->group(function () {
+    Route::prefix('patients/me')->middleware(['auth:patient_api', 'patient.status'])->group(function () {
         Route::get('dashboard', [PatientDashboardController::class, 'index']);
+        
+        // Form Requests (auto-llenado de plantillas)
+        Route::get('form-requests', [\App\Http\Controllers\Api\V1\PatientFormRequestController::class, 'patientIndex']);
+        Route::get('form-requests/{uuid}', [\App\Http\Controllers\Api\V1\PatientFormRequestController::class, 'patientShow']);
+        Route::post('form-requests/{uuid}/submit', [\App\Http\Controllers\Api\V1\PatientFormRequestController::class, 'patientSubmit']);
+
         Route::get('appointments', [PatientAppointmentController::class, 'index']);
         Route::get('appointments/{appointment}', [PatientAppointmentController::class, 'show']);
 
@@ -392,10 +405,10 @@ Route::prefix('v1')->group(function () {
         Route::post('invoices/{invoice}/payments', [PatientInvoiceController::class, 'storePayment']);
 
         Route::get('notifications', [PatientNotificationController::class, 'index']);
+        Route::get('notifications/unread-count', [PatientNotificationController::class, 'unreadCount']);
         Route::get('notifications/{notification}', [PatientNotificationController::class, 'show']);
         Route::patch('notifications/{notification}/read', [PatientNotificationController::class, 'markAsRead']);
         Route::post('notifications/read-all', [PatientNotificationController::class, 'markAllAsRead']);
-        Route::get('notifications/unread-count', [PatientNotificationController::class, 'unreadCount']);
 
         Route::get('medical-documents', [PatientMedicalDocumentController::class, 'index']);
         Route::get('medical-documents/{medical_document}', [PatientMedicalDocumentController::class, 'show']);

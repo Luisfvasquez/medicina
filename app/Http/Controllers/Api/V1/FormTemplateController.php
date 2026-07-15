@@ -16,45 +16,103 @@ class FormTemplateController extends Controller
             ->whereNull('user_id')
             ->orWhere('user_id', auth('user_api')->id())
             ->latest()
-            ->paginate(20);
+            ->get();
 
-        return response()->json(['data' => $templates]);
+        $mapped = $templates->map(function ($template) {
+            return array_merge($template->schema_json ?? [], [
+                'id' => $template->uuid,
+                'specialty' => $template->specialty,
+                'userId' => $template->user?->uuid,
+            ]);
+        });
+
+        return response()->json(['schemas' => $mapped]);
     }
 
     public function store(StoreFormTemplateRequest $request): JsonResponse
     {
-        $template = FormTemplate::create($request->validated());
+        $validated = $request->validated();
+        
+        $now = now()->toIso8601String();
+        $existing = FormTemplate::where('uuid', $validated['id'])->first();
+        
+        $schemaJson = $request->all();
+        if ($existing) {
+            $oldSchema = $existing->schema_json;
+            $oldVersion = (float) ($oldSchema['version'] ?? '1.0');
+            $schemaJson['version'] = (string) ($oldVersion + 0.1);
+            $schemaJson['createdAt'] = $oldSchema['createdAt'] ?? $now;
+        } else {
+            $schemaJson['version'] = '1.0.0';
+            $schemaJson['createdAt'] = $now;
+        }
+        $schemaJson['updatedAt'] = $now;
 
-        return response()->json(['data' => $template->load('user')], 201);
+        $template = FormTemplate::updateOrCreate(
+            ['uuid' => $validated['id']],
+            [
+                'user_id' => auth('user_api')->id(),
+                'specialty' => $validated['specialty'] ?? null,
+                'schema_json' => $schemaJson,
+            ]
+        );
+
+        $schema = array_merge($template->schema_json ?? [], [
+            'id' => $template->uuid,
+            'specialty' => $template->specialty,
+            'userId' => $template->user?->uuid,
+        ]);
+
+        return response()->json(['schema' => $schema], $existing ? 200 : 201);
     }
 
     public function show(string $id): JsonResponse
     {
-        $template = FormTemplate::with('user')->findOrFail($id);
+        $template = FormTemplate::with('user')->where('uuid', $id)->firstOrFail();
 
         if ($template->user_id && $template->user_id !== auth('user_api')->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        return response()->json(['data' => $template]);
+        $schema = array_merge($template->schema_json ?? [], [
+            'id' => $template->uuid,
+            'specialty' => $template->specialty,
+            'userId' => $template->user?->uuid,
+        ]);
+
+        return response()->json(['schema' => $schema]);
     }
 
     public function update(UpdateFormTemplateRequest $request, string $id): JsonResponse
     {
-        $template = FormTemplate::findOrFail($id);
+        $template = FormTemplate::where('uuid', $id)->firstOrFail();
 
         if ($template->user_id !== auth('user_api')->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $template->update($request->validated());
+        $validated = $request->validated();
+        
+        $schemaJson = array_merge($template->schema_json ?? [], $request->all());
+        $schemaJson['updatedAt'] = now()->toIso8601String();
 
-        return response()->json(['data' => $template->load('user')]);
+        $template->update([
+            'specialty' => $validated['specialty'] ?? $template->specialty,
+            'schema_json' => $schemaJson,
+        ]);
+
+        $schema = array_merge($template->schema_json ?? [], [
+            'id' => $template->uuid,
+            'specialty' => $template->specialty,
+            'userId' => $template->user?->uuid,
+        ]);
+
+        return response()->json(['schema' => $schema]);
     }
 
     public function destroy(string $id): JsonResponse
     {
-        $template = FormTemplate::findOrFail($id);
+        $template = FormTemplate::where('uuid', $id)->firstOrFail();
 
         if ($template->user_id !== auth('user_api')->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -62,6 +120,6 @@ class FormTemplateController extends Controller
 
         $template->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['deleted' => $id]);
     }
 }

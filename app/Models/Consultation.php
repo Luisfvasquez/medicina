@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Consultation extends Model
 {
-    use HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
+    use HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes, \App\Traits\SyncsPatientDataBindings;
 
     protected $fillable = [
         'uuid',
@@ -18,6 +18,7 @@ class Consultation extends Model
         'appointment_id',
         'clinic_branch_id',
         'form_template_id',
+        'form_schema_snapshot',
         'date',
         'status',
         'reason',
@@ -35,6 +36,7 @@ class Consultation extends Model
             'status' => ConsultationStatus::class,
             'dynamic_data' => 'array',
             'services_performed' => 'array',
+            'form_schema_snapshot' => 'array',
         ];
     }
 
@@ -87,4 +89,25 @@ class Consultation extends Model
     {
         return $this->hasMany(FollowUp::class);
     }
+
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+        
+        if (!empty($this->form_schema_snapshot)) {
+            if (empty($array['form_template'])) {
+                $array['form_template'] = [
+                    'uuid' => null,
+                    'name' => 'Plantilla Histórica',
+                    'schema_json' => $this->form_schema_snapshot,
+                ];
+            } else {
+                $array['form_template']['schema_json'] = $this->form_schema_snapshot;
+            }
+        }
+        
+        return $array;
+    }
+
+
 }

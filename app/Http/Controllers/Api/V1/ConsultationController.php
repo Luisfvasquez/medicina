@@ -47,12 +47,17 @@ class ConsultationController extends Controller
             ? \App\Models\ClinicBranch::where('uuid', $request->clinic_branch_uuid)->first() 
             : null;
 
+        $formTemplate = $request->form_template_id 
+            ? \App\Models\FormTemplate::where('uuid', $request->form_template_id)->first()
+            : null;
+
         $consultation = Consultation::create([
             'user_id' => $user->id,
             'patient_id' => $patient->id,
             'appointment_id' => $appointment?->id,
             'clinic_branch_id' => $clinicBranch?->id ?? $appointment?->clinic_branch_id,
-            'form_template_id' => $request->form_template_id,
+            'form_template_id' => $formTemplate?->id,
+            'form_schema_snapshot' => $formTemplate?->schema_json,
             'date' => $request->date ?? \Carbon\Carbon::now(),
             'status' => 'in-progress',
             'reason' => $request->reason,
@@ -90,6 +95,8 @@ class ConsultationController extends Controller
             ]);
         }
 
+        $consultation->syncPatientDataBindings();
+
         return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign', 'followUps'])], 201);
     }
 
@@ -125,6 +132,11 @@ class ConsultationController extends Controller
         }
         if (isset($updateData['clinic_branch_uuid'])) {
             $updateData['clinic_branch_id'] = \App\Models\ClinicBranch::where('uuid', $updateData['clinic_branch_uuid'])->firstOrFail()->id;
+        }
+        if (isset($updateData['form_template_id'])) {
+            $formTemplate = \App\Models\FormTemplate::where('uuid', $updateData['form_template_id'])->first();
+            $updateData['form_template_id'] = $formTemplate?->id;
+            $updateData['form_schema_snapshot'] = $formTemplate?->schema_json;
         }
 
         $consultation->update($updateData);
@@ -205,6 +217,8 @@ class ConsultationController extends Controller
         } else if ($request->has('follow_up') && empty($followUpData['scheduled_date'])) {
             $consultation->followUps()->delete();
         }
+
+        $consultation->syncPatientDataBindings();
 
         return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign', 'labRequest', 'prescription.items.medication', 'followUps'])]);
     }

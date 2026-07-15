@@ -14,9 +14,14 @@ class UpdateFormTemplateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'sometimes|string|max:255',
-            'schema_json' => 'sometimes|array',
+            'id' => 'sometimes|string',
+            'name' => 'sometimes|string|max:255',
             'specialty' => 'nullable|string|max:100',
+            'canvas' => 'sometimes|array',
+            'settings' => 'nullable|array',
+            'status' => 'nullable|string|in:draft,published',
+            'description' => 'nullable|string',
+            'version' => 'nullable|string',
         ];
     }
 }

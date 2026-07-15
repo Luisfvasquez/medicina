@@ -14,10 +14,14 @@ class StoreFormTemplateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
-            'schema_json' => 'required|array',
-            'user_id' => 'nullable|uuid|exists:users,id',
+            'id' => 'required|string',
+            'name' => 'required|string|max:255',
             'specialty' => 'nullable|string|max:100',
+            'canvas' => 'required|array',
+            'settings' => 'nullable|array',
+            'status' => 'nullable|string|in:draft,published',
+            'description' => 'nullable|string',
+            'version' => 'nullable|string',
         ];
     }
 }

@@ -15,7 +15,7 @@ class AppointmentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $user = auth('user_api')->user();
+        $user = auth('user_api')->user() ?? auth('patient_api')->user();
         $clinicBranchId = $request->query('clinic_branch_id');
         $timeframe = $request->query('timeframe');
         $status = $request->query('status');
@@ -27,10 +27,22 @@ class AppointmentController extends Controller
         }
         $today = \Carbon\Carbon::today($timezone)->toDateString();
 
-        $query = Appointment::with(['patient', 'doctor', 'clinicBranch'])
-            ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
-            ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
-            ->when($clinicBranchId, fn($q) => $q->where('clinic_branch_id', $clinicBranchId));
+        $query = Appointment::with(['patient', 'doctor', 'clinicBranch']);
+
+        if ($user) {
+            $role = isset($user->role) ? ($user->role instanceof \App\Enums\UserRole ? $user->role->value : $user->role) : null;
+            if ($role === 'DOCTOR') {
+                $query->where('user_id', $user->id);
+            } elseif ($user instanceof \App\Models\PatientAccount) {
+                $query->whereHas('patient', function ($q) use ($user) {
+                    $q->where('patient_account_id', $user->id);
+                });
+            }
+        }
+
+        if ($clinicBranchId) {
+            $query->where('clinic_branch_id', $clinicBranchId);
+        }
 
         // 1. Filtro Temporal (timeframe)
         if ($timeframe === 'today') {
@@ -91,7 +103,36 @@ class AppointmentController extends Controller
 
         // Resolve internal models and IDs
         $doctor = \App\Models\User::where('uuid', $doctorUuid)->firstOrFail();
-        $patient = \App\Models\Patient::where('uuid', $patientUuid)->firstOrFail();
+
+        $patient = \App\Models\Patient::where('uuid', $patientUuid)->first();
+        if (!$patient) {
+            $patientAccount = \App\Models\PatientAccount::where('uuid', $patientUuid)->first();
+            if ($patientAccount) {
+                $patient = \App\Models\Patient::where('patient_account_id', $patientAccount->id)->first();
+                if (!$patient) {
+                    $nameParts = explode(' ', trim($patientAccount->full_name ?? ''));
+                    $firstName = $nameParts[0] ?? 'Paciente';
+                    $lastName = count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : ' ';
+
+                    $patient = \App\Models\Patient::create([
+                        'user_id' => $doctor->id,
+                        'patient_account_id' => $patientAccount->id,
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                        'birth_date' => $patientAccount->birth_date ?? now(),
+                        'email' => $patientAccount->email,
+                        'phone' => $patientAccount->phone,
+                        'national_id' => $patientAccount->national_id,
+                        'city_id' => $patientAccount->city_id,
+                    ]);
+                }
+            }
+        }
+
+        if (!$patient) {
+            return response()->json(['error' => 'Paciente no encontrado'], 404);
+        }
+
         $clinicBranch = $clinicBranchUuid 
             ? \App\Models\ClinicBranch::where('uuid', $clinicBranchUuid)->first()
             : null;
@@ -141,10 +182,16 @@ class AppointmentController extends Controller
             'consultation.prescription.items.medication'
         ])->where('uuid', $id)->firstOrFail();
 
-        $user = auth('user_api')->user();
-        $role = $user && $user->role instanceof \App\Enums\UserRole ? $user->role->value : ($user->role ?? null);
+        $user = auth('user_api')->user() ?? auth('patient_api')->user();
+        $role = $user && isset($user->role) ? ($user->role instanceof \App\Enums\UserRole ? $user->role->value : $user->role) : null;
         if ($role === 'DOCTOR' && $appointment->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        if ($user instanceof \App\Models\PatientAccount) {
+            $patientIds = \App\Models\Patient::where('patient_account_id', $user->id)->pluck('id')->toArray();
+            if (!in_array($appointment->patient_id, $patientIds, true)) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
         }
 
         // Si el paciente tiene cita, adjuntar los signos vitales más recientes
@@ -167,9 +214,16 @@ class AppointmentController extends Controller
     {
         $appointment = Appointment::where('uuid', $id)->firstOrFail();
 
-        $user = auth('user_api')->user();
-        if ($user->role === 'DOCTOR' && $appointment->user_id !== $user->id) {
+        $user = auth('user_api')->user() ?? auth('patient_api')->user();
+        $role = $user && isset($user->role) ? ($user->role instanceof \App\Enums\UserRole ? $user->role->value : $user->role) : null;
+        if ($role === 'DOCTOR' && $appointment->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        if ($user instanceof \App\Models\PatientAccount) {
+            $patientIds = \App\Models\Patient::where('patient_account_id', $user->id)->pluck('id')->toArray();
+            if (!in_array($appointment->patient_id, $patientIds, true)) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
         }
 
         $validated = $request->validated();
@@ -206,9 +260,16 @@ class AppointmentController extends Controller
     {
         $appointment = Appointment::where('uuid', $id)->firstOrFail();
 
-        $user = auth('user_api')->user();
-        if ($user->role === 'DOCTOR' && $appointment->user_id !== $user->id) {
+        $user = auth('user_api')->user() ?? auth('patient_api')->user();
+        $role = $user && isset($user->role) ? ($user->role instanceof \App\Enums\UserRole ? $user->role->value : $user->role) : null;
+        if ($role === 'DOCTOR' && $appointment->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        if ($user instanceof \App\Models\PatientAccount) {
+            $patientIds = \App\Models\Patient::where('patient_account_id', $user->id)->pluck('id')->toArray();
+            if (!in_array($appointment->patient_id, $patientIds, true)) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
         }
 
         $appointment->delete();

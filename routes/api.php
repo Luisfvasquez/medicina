@@ -146,13 +146,9 @@ Route::prefix('v1')->group(function () {
         Route::delete('services/provider-services/{uuid}', [ServiceController::class, 'destroyProviderService']);
     });
 
-    // Sync (offline-first bulk push/pull) - requires authentication
+    // Sync & Appointments (accessible by both doctors and patients)
     Route::middleware('auth:user_api,patient_api')->group(function () {
         Route::post('sync', [SyncController::class, 'sync']);
-    });
-
-    Route::middleware(['auth:user_api', 'user.status'])->group(function () {
-        Route::get('doctor/dashboard', [DoctorDashboardController::class, 'index']);
 
         // Appointments - idempotent store
         Route::get('appointments', [AppointmentController::class, 'index']);
@@ -161,6 +157,10 @@ Route::prefix('v1')->group(function () {
         Route::put('appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::patch('appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy']);
+    });
+
+    Route::middleware(['auth:user_api', 'user.status'])->group(function () {
+        Route::get('doctor/dashboard', [DoctorDashboardController::class, 'index']);
 
         // FormTemplates - idempotent store
         Route::get('form-templates', [FormTemplateController::class, 'index']);
@@ -384,6 +384,7 @@ Route::prefix('v1')->group(function () {
         Route::post('form-requests/{uuid}/submit', [\App\Http\Controllers\Api\V1\PatientFormRequestController::class, 'patientSubmit']);
 
         Route::get('appointments', [PatientAppointmentController::class, 'index']);
+        Route::post('appointments', [AppointmentController::class, 'store'])->middleware('idempotent');
         Route::get('appointments/{appointment}', [PatientAppointmentController::class, 'show']);
 
         Route::get('consultations', [PatientConsultationController::class, 'index']);

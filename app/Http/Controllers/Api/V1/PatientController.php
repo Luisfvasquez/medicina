@@ -81,9 +81,7 @@ class PatientController extends Controller
             ->firstOrFail();
 
         $data = $request->validated();
-        if (isset($data['email'])) {
-            $data['patient_account_id'] = $this->resolvePatientAccountId($data);
-        }
+        $data['patient_account_id'] = $this->resolvePatientAccountId($data, $patient);
 
         $patient->update($data);
 
@@ -105,26 +103,66 @@ class PatientController extends Controller
     }
 
     /**
-     * Resolve or create a PatientAccount for the patient.
+     * Resolve, update, or create a PatientAccount for the patient.
      */
-    private function resolvePatientAccountId(array $data): int
+    private function resolvePatientAccountId(array $data, ?Patient $existingPatient = null): int
     {
         $email = $data['email'] ?? null;
+        $phone = $data['phone'] ?? null;
+        $fullName = trim(($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? ''));
 
-        if ($email) {
-            $account = PatientAccount::where('email', $email)->first();
-            if ($account) {
-                return $account->id;
-            }
+        // 1. Check if patient already has a linked account
+        $account = null;
+        if ($existingPatient && $existingPatient->patient_account_id) {
+            $account = PatientAccount::find($existingPatient->patient_account_id);
         }
 
+        // 2. Search by email or phone if not found by existing link
+        if (!$account && $email) {
+            $account = PatientAccount::where('email', $email)->first();
+        }
+        if (!$account && $phone) {
+            $account = PatientAccount::where('phone', $phone)->first();
+        }
+
+        // 3. If account exists, update fields safely
+        if ($account) {
+            $updateFields = [];
+
+            if ($email && $account->email !== $email) {
+                $emailExists = PatientAccount::where('email', $email)->where('id', '!=', $account->id)->exists();
+                if (!$emailExists) {
+                    $updateFields['email'] = $email;
+                }
+            }
+
+            if ($phone && $account->phone !== $phone) {
+                $phoneExists = PatientAccount::where('phone', $phone)->where('id', '!=', $account->id)->exists();
+                if (!$phoneExists) {
+                    $updateFields['phone'] = $phone;
+                }
+            }
+
+            if (!empty($fullName) && $account->full_name !== $fullName) {
+                $updateFields['full_name'] = $fullName;
+            }
+
+            if (!empty($updateFields)) {
+                $account->update($updateFields);
+            }
+
+            return $account->id;
+        }
+
+        // 4. Create new account if none found
         $account = PatientAccount::create([
             'email'         => $email ?? 'placeholder-' . ($data['uuid'] ?? (string) Str::uuid()) . '@luca.local',
             'password_hash' => bcrypt(bin2hex(random_bytes(16))),
-            'full_name'     => trim(($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? '')),
-            'phone'         => $data['phone'] ?? null,
+            'full_name'     => $fullName,
+            'phone'         => $phone,
         ]);
 
         return $account->id;
     }
+
 }

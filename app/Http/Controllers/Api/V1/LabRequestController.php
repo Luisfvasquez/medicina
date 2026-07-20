@@ -17,6 +17,7 @@ class LabRequestController extends Controller
     {
         $user = auth('user_api')->user();
         $patientUuid = $request->query('patient_uuid');
+        $perPage = max(1, min((int) $request->query('per_page', 10), 100));
 
         $query = LabRequest::with(['patient', 'consultation'])
             ->where('user_id', $user->id);
@@ -27,7 +28,7 @@ class LabRequestController extends Controller
             });
         }
 
-        $labRequests = $query->latest()->get();
+        $labRequests = $query->latest()->paginate($perPage);
 
         return response()->json(['data' => $labRequests]);
     }

@@ -406,51 +406,53 @@ class SyncService
             }
 
             try {
-                $existing = $modelClass::where('uuid', $itemUuid)->first();
+                DB::transaction(function () use ($modelClass, $itemUuid, $item, $fillableFields, $fkData, $patient, $patientAccount, &$result) {
+                    $existing = $modelClass::where('uuid', $itemUuid)->first();
 
-                $modelInstance = new $modelClass();
-                $data = $this->onlyFillable($modelInstance, $item, $fillableFields);
-                $data = $this->normalizeEnumFields($modelInstance, $data);
-                foreach ($fkData as $col => $val) {
-                    $data[$col] = $val;
-                }
-
-                // Set patient_id for patient entities
-                if ($patient && in_array('patient_id', (new $modelClass())->getFillable())) {
-                    $data['patient_id'] = $patient->id;
-                }
-
-                // Special case for Appointment: doctor_uuid maps to user_id (not doctor_id)
-                if ($modelClass === Appointment::class && isset($item['doctor_uuid']) && isset($fkMaps['doctor_uuid'])) {
-                    $doctorUuid = $item['doctor_uuid'];
-                    if (isset($fkMaps['doctor_uuid'][$doctorUuid])) {
-                        $data['user_id'] = $fkMaps['doctor_uuid'][$doctorUuid];
+                    $modelInstance = new $modelClass();
+                    $data = $this->onlyFillable($modelInstance, $item, $fillableFields);
+                    $data = $this->normalizeEnumFields($modelInstance, $data);
+                    foreach ($fkData as $col => $val) {
+                        $data[$col] = $val;
                     }
-                }
 
-                if ($modelClass === Patient::class) {
-                    $data['patient_account_id'] = $patientAccount->id;
-                }
+                    // Set patient_id for patient entities
+                    if ($patient && in_array('patient_id', (new $modelClass())->getFillable())) {
+                        $data['patient_id'] = $patient->id;
+                    }
 
-                if (!$existing) {
-                    $data['uuid'] = $itemUuid;
-                    $modelClass::create($data);
-                    $result['success'][] = $itemUuid;
-                    continue;
-                }
+                    // Special case for Appointment: doctor_uuid maps to user_id (not doctor_id)
+                    if ($modelClass === Appointment::class && isset($item['doctor_uuid']) && isset($fkMaps['doctor_uuid'])) {
+                        $doctorUuid = $item['doctor_uuid'];
+                        if (isset($fkMaps['doctor_uuid'][$doctorUuid])) {
+                            $data['user_id'] = $fkMaps['doctor_uuid'][$doctorUuid];
+                        }
+                    }
 
-                // LWW: accept only if client timestamp is newer
-                $clientTs = Carbon::parse($item['updated_at']);
-                if ($clientTs->gt($existing->updated_at)) {
-                    $existing->update($data);
-                    $result['success'][] = $itemUuid;
-                } else {
-                    $result['errors'][] = [
-                        'uuid'    => $itemUuid,
-                        'field'   => 'updated_at',
-                        'message' => 'Server version is newer.',
-                    ];
-                }
+                    if ($modelClass === Patient::class) {
+                        $data['patient_account_id'] = $patientAccount->id;
+                    }
+
+                    if (!$existing) {
+                        $data['uuid'] = $itemUuid;
+                        $modelClass::create($data);
+                        $result['success'][] = $itemUuid;
+                        return;
+                    }
+
+                    // LWW: accept only if client timestamp is newer
+                    $clientTs = Carbon::parse($item['updated_at']);
+                    if ($clientTs->gt($existing->updated_at)) {
+                        $existing->update($data);
+                        $result['success'][] = $itemUuid;
+                    } else {
+                        $result['errors'][] = [
+                            'uuid'    => $itemUuid,
+                            'field'   => 'updated_at',
+                            'message' => 'Server version is newer.',
+                        ];
+                    }
+                });
             } catch (\Illuminate\Database\QueryException $e) {
                 $result['errors'][] = [
                     'uuid'    => $itemUuid,
@@ -458,7 +460,11 @@ class SyncService
                     'message' => $e->getMessage(),
                 ];
             } catch (\Throwable $e) {
-                throw $e;
+                $result['errors'][] = [
+                    'uuid'    => $itemUuid,
+                    'field'   => 'server',
+                    'message' => $e->getMessage(),
+                ];
             }
         }
 
@@ -689,41 +695,43 @@ class SyncService
             // For entities that need patient_id derived from patient_uuid, the fkMaps handles it.
 
             try {
-                $existing = $modelClass::where('uuid', $itemUuid)->first();
+                DB::transaction(function () use ($modelClass, $itemUuid, $item, $fillableFields, $fkData, $setUserId, $user, &$result) {
+                    $existing = $modelClass::where('uuid', $itemUuid)->first();
 
-                $modelInstance = new $modelClass();
-                $data = $this->onlyFillable($modelInstance, $item, $fillableFields);
-                $data = $this->normalizeEnumFields($modelInstance, $data);
-                foreach ($fkData as $col => $val) {
-                    $data[$col] = $val;
-                }
-                if ($setUserId) {
-                    $data['user_id'] = $user->id;
-                }
-
-                if (! $existing) {
-                    $data['uuid'] = $itemUuid;
-                    // Special handling for patient: resolve PatientAccount
-                    if ($modelClass === Patient::class) {
-                        $data['patient_account_id'] = $this->resolvePatientAccountId($data);
+                    $modelInstance = new $modelClass();
+                    $data = $this->onlyFillable($modelInstance, $item, $fillableFields);
+                    $data = $this->normalizeEnumFields($modelInstance, $data);
+                    foreach ($fkData as $col => $val) {
+                        $data[$col] = $val;
                     }
-                    $modelClass::create($data);
-                    $result['success'][] = $itemUuid;
-                    continue;
-                }
+                    if ($setUserId) {
+                        $data['user_id'] = $user->id;
+                    }
 
-                // LWW: accept only if client timestamp is newer
-                $clientTs = Carbon::parse($item['updated_at']);
-                if ($clientTs->gt($existing->updated_at)) {
-                    $existing->update($data);
-                    $result['success'][] = $itemUuid;
-                } else {
-                    $result['errors'][] = [
-                        'uuid'    => $itemUuid,
-                        'field'   => 'updated_at',
-                        'message' => 'Server version is newer.',
-                    ];
-                }
+                    if (! $existing) {
+                        $data['uuid'] = $itemUuid;
+                        // Special handling for patient: resolve PatientAccount
+                        if ($modelClass === Patient::class) {
+                            $data['patient_account_id'] = $this->resolvePatientAccountId($data);
+                        }
+                        $modelClass::create($data);
+                        $result['success'][] = $itemUuid;
+                        return;
+                    }
+
+                    // LWW: accept only if client timestamp is newer
+                    $clientTs = Carbon::parse($item['updated_at']);
+                    if ($clientTs->gt($existing->updated_at)) {
+                        $existing->update($data);
+                        $result['success'][] = $itemUuid;
+                    } else {
+                        $result['errors'][] = [
+                            'uuid'    => $itemUuid,
+                            'field'   => 'updated_at',
+                            'message' => 'Server version is newer.',
+                        ];
+                    }
+                });
             } catch (\Illuminate\Database\QueryException $e) {
                 $result['errors'][] = [
                     'uuid'    => $itemUuid,
@@ -731,7 +739,11 @@ class SyncService
                     'message' => $e->getMessage(),
                 ];
             } catch (\Throwable $e) {
-                throw $e;
+                $result['errors'][] = [
+                    'uuid'    => $itemUuid,
+                    'field'   => 'server',
+                    'message' => $e->getMessage(),
+                ];
             }
         }
 
@@ -938,6 +950,7 @@ class SyncService
 
         $uuids = array_column($items, 'uuid');
         $uuids = array_filter($uuids, fn($u) => $this->isValidUuid($u));
+        $uuids = array_unique(array_values($uuids));
         if (empty($uuids)) {
             return [];
         }

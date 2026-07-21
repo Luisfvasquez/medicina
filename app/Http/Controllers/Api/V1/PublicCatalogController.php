@@ -31,11 +31,25 @@ class PublicCatalogController extends Controller
             ]);
 
         if ($request->filled('city_id')) {
-            $query->where('city_id', $request->city_id);
+            $cityId = $request->input('city_id');
+            $query->where(function ($q) use ($cityId) {
+                if (is_numeric($cityId)) {
+                    $q->where('city_id', (int) $cityId);
+                } else {
+                    $q->whereHas('city', fn($cq) => $cq->where('uuid', $cityId));
+                }
+            });
         }
 
         if ($request->filled('specialty_id')) {
-            $query->whereHas('specialties', fn($q) => $q->where('specialty_id', $request->specialty_id));
+            $specialtyId = $request->input('specialty_id');
+            $query->whereHas('specialties', function ($q) use ($specialtyId) {
+                if (is_numeric($specialtyId)) {
+                    $q->where('specialty_id', (int) $specialtyId);
+                } else {
+                    $q->where('uuid', $specialtyId);
+                }
+            });
         }
 
         if ($request->filled('search')) {
@@ -99,7 +113,14 @@ class PublicCatalogController extends Controller
             ->with(['branches', 'city:id,name', 'user']);
 
         if ($request->filled('city_id')) {
-            $query->where('city_id', $request->city_id);
+            $cityId = $request->input('city_id');
+            $query->where(function ($q) use ($cityId) {
+                if (is_numeric($cityId)) {
+                    $q->where('city_id', (int) $cityId);
+                } else {
+                    $q->whereHas('city', fn($cq) => $cq->where('uuid', $cityId));
+                }
+            });
         }
 
         if ($request->filled('search')) {
@@ -158,7 +179,14 @@ class PublicCatalogController extends Controller
         ]);
 
         if ($request->filled('city_id')) {
-            $query->whereHas('branches', fn($q) => $q->where('city_id', $request->city_id));
+            $cityId = $request->input('city_id');
+            $query->whereHas('branches', function ($q) use ($cityId) {
+                if (is_numeric($cityId)) {
+                    $q->where('city_id', (int) $cityId);
+                } else {
+                    $q->whereHas('city', fn($cq) => $cq->where('uuid', $cityId));
+                }
+            });
         }
 
         if ($request->filled('search')) {

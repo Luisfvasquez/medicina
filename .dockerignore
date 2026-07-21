@@ -10,6 +10,7 @@ storage/framework/views/*
 .env
 .env.*
 !.env.example
+!.env.docker
 Dockerfile*
 docker-compose*.yml
 README.md

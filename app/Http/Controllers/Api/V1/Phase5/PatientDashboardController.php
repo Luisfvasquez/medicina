@@ -79,19 +79,49 @@ class PatientDashboardController extends Controller
         $activePrescriptions = Prescription::where('patient_id', $patient->id)
             ->where('expiration_date', '>=', $today)
             ->where('status', \App\Enums\RxStatus::ACTIVE)
-            ->with('items')
+            ->with(['items.medication'])
             ->get();
 
         $activePrescriptionsCount = $activePrescriptions->count();
-        
+
         $activeTreatments = [];
         foreach ($activePrescriptions as $rx) {
+            $startDate = Carbon::parse($rx->created_at ?? $rx->issue_date);
+            $endDate = Carbon::parse($rx->expiration_date);
+            $totalDays = max(1, $startDate->diffInDays($endDate));
+            $elapsedDays = max(0, min($totalDays, $startDate->diffInDays(Carbon::now())));
+            $calculatedProgress = (int) round(($elapsedDays / $totalDays) * 100);
+
             foreach ($rx->items as $item) {
-                // Simulamos el progreso y la próxima dosis para encajar exactamente con la maqueta visual del UI
+                if ($item->medication) {
+                    $commercial = trim((string) $item->medication->commercial_name);
+                    $active = trim((string) $item->medication->active_principle);
+
+                    if ($commercial && $active) {
+                        $medName = "{$commercial} ({$active})";
+                    } else {
+                        $medName = $commercial ?: ($active ?: 'Medicamento #' . $item->medication_id);
+                    }
+
+                    if ($item->medication->concentration && !str_contains($medName, $item->medication->concentration)) {
+                        $medName .= ' ' . $item->medication->concentration;
+                    }
+                } else {
+                    $medName = 'Medicamento #' . $item->medication_id;
+                }
+
+                $freq = trim((string) $item->frequency);
+                $freqText = '';
+                if (!empty($freq)) {
+                    $freqText = preg_match('/^cada\s+/i', $freq) ? $freq : "cada {$freq}";
+                }
+
+                $instructions = trim("{$item->dose} {$freqText}");
+
                 $activeTreatments[] = [
-                    'name' => $item->medication?->name ?? $item->medication_id,
-                    'instructions' => "{$item->dose} cada {$item->frequency}. Cada {$item->frequency}",
-                    'progress' => rand(30, 85), // progreso simulado razonable
+                    'name' => $medName,
+                    'instructions' => $instructions ?: 'Según indicación médica',
+                    'progress' => $calculatedProgress,
                     'next_dose' => Carbon::now()->addHours(rand(2, 6))->format('H:i'),
                 ];
             }
@@ -147,7 +177,7 @@ class PatientDashboardController extends Controller
         $consultationsHistory = [];
         foreach ($consultationsModels as $consultation) {
             $startTime = Carbon::parse($consultation->date);
-            $endTime = $consultation->appointment 
+            $endTime = $consultation->appointment
                 ? Carbon::parse($consultation->appointment->time)->addMinutes($consultation->appointment->doctor_schedule?->appointment_duration ?? 30)
                 : $startTime->copy()->addMinutes(30);
 

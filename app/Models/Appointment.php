@@ -21,6 +21,7 @@ class Appointment extends Model
         'slot_time',
         'type',
         'status',
+        'reason',
         'notes',
     ];
 

@@ -33,6 +33,7 @@ class UpdateAppointmentRequest extends FormRequest
             'time' => 'sometimes',
             'type' => 'sometimes|string',
             'status' => ['sometimes', Rule::enum(AppointmentStatus::class)],
+            'reason' => 'nullable|string',
             'notes' => 'nullable|string',
         ];
     }

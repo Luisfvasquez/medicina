@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('time');
             $table->string('type');
             $table->string('status')->default(\App\Enums\AppointmentStatus::PENDING->value);
+            $table->text('reason')->nullable();
             $table->text('notes')->nullable();
             
             $table->timestamps();

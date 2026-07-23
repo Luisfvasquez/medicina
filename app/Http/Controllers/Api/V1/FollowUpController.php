@@ -20,8 +20,8 @@ class FollowUpController extends Controller
         $followUps = FollowUp::with(['patient', 'user', 'consultation.clinicBranch'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
             ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
-            ->when($consultationId, fn($q) => $q->where('consultation_id', $consultationId))
-            ->when($clinicBranchId, fn($q) => $q->whereHas('consultation', fn($c) => $c->where('clinic_branch_id', $clinicBranchId)))
+            ->when($consultationId, fn($q) => $q->whereHas('consultation', fn($c) => $c->where(is_numeric($consultationId) ? 'id' : 'uuid', $consultationId)))
+            ->when($clinicBranchId, fn($q) => $q->whereHas('consultation', fn($c) => is_numeric($clinicBranchId) ? $c->where('clinic_branch_id', $clinicBranchId) : $c->whereHas('clinicBranch', fn($cb) => $cb->where('uuid', $clinicBranchId))))
             ->latest()
             ->paginate(20);
 
@@ -55,8 +55,7 @@ class FollowUpController extends Controller
     public function show(string $id): JsonResponse
     {
         $followUp = FollowUp::with(['patient', 'user', 'consultation'])
-            ->where('id', $id)
-            ->orWhere('uuid', $id)
+            ->where(is_numeric($id) ? 'id' : 'uuid', $id)
             ->firstOrFail();
 
         $user = auth('user_api')->user();
@@ -69,8 +68,7 @@ class FollowUpController extends Controller
 
     public function update(UpdateFollowUpRequest $request, string $id): JsonResponse
     {
-        $followUp = FollowUp::where('id', $id)
-            ->orWhere('uuid', $id)
+        $followUp = FollowUp::where(is_numeric($id) ? 'id' : 'uuid', $id)
             ->firstOrFail();
 
         $user = auth('user_api')->user();
@@ -95,8 +93,7 @@ class FollowUpController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $followUp = FollowUp::where('id', $id)
-            ->orWhere('uuid', $id)
+        $followUp = FollowUp::where(is_numeric($id) ? 'id' : 'uuid', $id)
             ->firstOrFail();
 
         $user = auth('user_api')->user();

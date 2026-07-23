@@ -180,8 +180,22 @@ class PatientAuthController extends Controller
 
         $patient->update($accountData);
 
-        $patient->loadMissing('patient');
-        $profile = $patient->patient;
+        $profile = $this->authResponse->resolveClinicalProfile($patient);
+
+        if (!$profile) {
+            $nameParts = explode(' ', $patient->full_name);
+            $profile = \App\Models\Patient::create([
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'patient_account_id' => $patient->id,
+                'first_name' => $nameParts[0] ?? '',
+                'last_name' => implode(' ', array_slice($nameParts, 1)) ?: '',
+                'email' => $patient->email,
+                'phone' => $patient->phone,
+                'national_id' => $patient->national_id,
+                'city_id' => $patient->city_id,
+                'birth_date' => now(),
+            ]);
+        }
 
         if ($profile) {
             $profileData = [];

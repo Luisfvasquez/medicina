@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->comment('Dueño del expediente (Doctor)');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade')->comment('Dueño del expediente (Doctor)');
             $table->foreignId('patient_account_id')->constrained('patient_accounts')->onDelete('cascade')->comment('Link a Cuenta Global');
             
             $table->string('first_name');
             $table->string('last_name');
             $table->string('national_id')->nullable();
-            $table->datetime('birth_date');
+            $table->datetime('birth_date')->nullable();
             $table->string('gender')->default(\App\Enums\Gender::OTHER->value);
             
             $table->string('email')->nullable();

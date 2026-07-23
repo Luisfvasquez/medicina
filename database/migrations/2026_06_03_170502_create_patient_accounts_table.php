@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('national_id')->nullable()->unique();
             $table->string('username')->nullable()->unique();
             $table->foreignId('city_id')->nullable()->constrained('cities')->onDelete('set null');
-            $table->string('avatar_url')->nullable();
+            $table->text('avatar_url')->nullable();
             $table->timestamps();
         });
     }

@@ -1,3 +1,4 @@
+
 # SDD Design — Auth Contract Alignment
 
 **Change**: auth-contract-alignment

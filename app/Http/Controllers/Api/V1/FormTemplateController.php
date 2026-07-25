@@ -22,6 +22,7 @@ class FormTemplateController extends Controller
             return array_merge($template->schema_json ?? [], [
                 'id' => $template->uuid,
                 'specialty' => $template->specialty,
+                'documentCategory' => $template->document_category ?? 'historia-clinica',
                 'userId' => $template->user?->uuid,
             ]);
         });
@@ -53,6 +54,7 @@ class FormTemplateController extends Controller
             [
                 'user_id' => auth('user_api')->id(),
                 'specialty' => $validated['specialty'] ?? null,
+                'document_category' => $validated['document_category'] ?? 'historia-clinica',
                 'schema_json' => $schemaJson,
             ]
         );
@@ -60,6 +62,7 @@ class FormTemplateController extends Controller
         $schema = array_merge($template->schema_json ?? [], [
             'id' => $template->uuid,
             'specialty' => $template->specialty,
+            'documentCategory' => $template->document_category ?? 'historia-clinica',
             'userId' => $template->user?->uuid,
         ]);
 
@@ -77,6 +80,7 @@ class FormTemplateController extends Controller
         $schema = array_merge($template->schema_json ?? [], [
             'id' => $template->uuid,
             'specialty' => $template->specialty,
+            'documentCategory' => $template->document_category ?? 'historia-clinica',
             'userId' => $template->user?->uuid,
         ]);
 
@@ -98,12 +102,14 @@ class FormTemplateController extends Controller
 
         $template->update([
             'specialty' => $validated['specialty'] ?? $template->specialty,
+            'document_category' => $validated['document_category'] ?? $template->document_category,
             'schema_json' => $schemaJson,
         ]);
 
         $schema = array_merge($template->schema_json ?? [], [
             'id' => $template->uuid,
             'specialty' => $template->specialty,
+            'documentCategory' => $template->document_category ?? 'historia-clinica',
             'userId' => $template->user?->uuid,
         ]);
 

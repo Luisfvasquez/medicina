@@ -13,6 +13,7 @@ class FormTemplate extends Model
         'uuid',
         'user_id',
         'specialty',
+        'document_category',
         'schema_json',
     ];
 

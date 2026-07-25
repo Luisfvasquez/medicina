@@ -23,7 +23,7 @@ class EmailChannel implements OtpChannelInterface
                 $codeBoxes .= "<div style='display: inline-block; width: 42px; height: 52px; line-height: 52px; text-align: center; border: 1.5px solid #dbeafe; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 26px; font-weight: 800; color: #23DCE1; background-color: #ffffff; margin-right: {$marginRight}; box-shadow: 0 2px 4px rgba(0, 82, 255, 0.04);'>$digit</div>";
             }
 
-            $disk = Storage::disk('r2');
+            $disk = Storage::disk('r2_images');
 
             // Subir PharmakoEmailCodeOtpExtraLarge-WEBP.webp
             $illustrationPath = 'assets/PharmakoEmailCodeOtpExtraLarge-WEBP.webp';

@@ -41,22 +41,34 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
         ],
 
-        'r2' => [
+        'r2_images' => [
             'driver' => 's3',
             'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
             'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
             'region' => env('CLOUDFLARE_R2_REGION', 'auto'),
-            'bucket' => env('CLOUDFLARE_R2_BUCKET'),
+            'bucket' => env('CLOUDFLARE_R2_BUCKET_MEDIA'),
             'url' => env('CLOUDFLARE_R2_URL'),
             'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
-            'use_path_style_endpoint' => env('CLOUDFLARE_R2_USE_PATH_STYLE_ENDPOINT', false),
+            'use_path_style_endpoint' => true,
             'throw' => true,
+        ],
+        // Disco 2: Exclusivo para backups de la Base de Datos
+        'r2_backups' => [
+            'driver'                  => 's3',
+            'key'                     => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+            'secret'                  => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+            'region'                  => env('CLOUDFLARE_R2_REGION', 'auto'),
+            'bucket'                  => env('CLOUDFLARE_R2_BUCKET_BACKUPS'),
+            'url'                     => env('CLOUDFLARE_R2_URL'),
+            'endpoint'                => env('CLOUDFLARE_R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw'                   => true,
         ],
 
         's3' => [

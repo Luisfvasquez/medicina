@@ -116,6 +116,7 @@ Route::prefix('v1')->group(function () {
     // Services routes
     Route::get('services/global', [ServiceController::class, 'globalIndex']);
     Route::get('services/provider/{providerUuid}', [ServiceController::class, 'providerIndex']);
+    Route::get('services/provider/{providerUuid}/stats', [ServiceController::class, 'providerStats']);
 
     // Public Catalog (no auth required)
     Route::get('public/doctors', [PublicCatalogController::class, 'doctors']);

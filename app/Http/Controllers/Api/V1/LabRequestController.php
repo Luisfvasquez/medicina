@@ -17,6 +17,9 @@ class LabRequestController extends Controller
     {
         $user = auth('user_api')->user();
         $patientUuid = $request->query('patient_uuid');
+        $status = $request->query('status');
+        $isCompleted = $request->query('is_completed');
+        $search = $request->query('search') ?? $request->query('q');
         $perPage = max(1, min((int) $request->query('per_page', 10), 100));
 
         $query = LabRequest::with(['patient', 'consultation'])
@@ -28,7 +31,31 @@ class LabRequestController extends Controller
             });
         }
 
-        $labRequests = $query->latest()->paginate($perPage);
+        // Filtro por estado (is_completed o status)
+        if ($isCompleted !== null && $isCompleted !== '') {
+            $query->where('is_completed', filter_var($isCompleted, FILTER_VALIDATE_BOOLEAN));
+        } elseif ($status && strtolower($status) !== 'all') {
+            $lowerStatus = strtolower($status);
+            if ($lowerStatus === 'completed') {
+                $query->where('is_completed', true);
+            } elseif ($lowerStatus === 'pending') {
+                $query->where('is_completed', false);
+            }
+        }
+
+        // Búsqueda por texto (paciente, nombre o examen)
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('patient', function ($pq) use ($search) {
+                    $pq->where('first_name', 'like', "%{$search}%")
+                       ->orWhere('last_name', 'like', "%{$search}%")
+                       ->orWhere('national_id', 'like', "%{$search}%");
+                })->orWhere('exams_list', 'like', "%{$search}%")
+                  ->orWhere('instructions', 'like', "%{$search}%");
+            });
+        }
+
+        $labRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return response()->json(['data' => $labRequests]);
     }

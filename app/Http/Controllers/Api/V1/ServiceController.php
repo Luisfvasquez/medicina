@@ -63,6 +63,74 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function providerStats(string $providerUuid): JsonResponse
+    {
+        $provider = User::where('uuid', $providerUuid)->first()
+            ?? ClinicBranch::where('uuid', $providerUuid)->first();
+
+        if (!$provider) {
+            return response()->json([
+                'data' => [
+                    'totalServices' => 0,
+                    'averagePrice' => 0,
+                    'standaloneBookableCount' => 0,
+                    'totalCategories' => 0,
+                    'categoryBreakdown' => [],
+                    'previewServices' => [],
+                ]
+            ]);
+        }
+
+        $services = ProviderService::where('provider_id', $provider->id)
+            ->where('provider_type', get_class($provider))
+            ->with('service')
+            ->get();
+
+        $totalServices = $services->count();
+        $averagePrice = $totalServices > 0 ? round((float) $services->avg('price'), 2) : 0;
+        $standaloneBookableCount = $services->where('is_standalone_bookable', true)->count();
+
+        // Categorías agrupadas
+        $grouped = $services->groupBy(function ($ps) {
+            return $ps->service->category ?? 'OTHER';
+        });
+
+        $categoryBreakdown = [];
+        foreach ($grouped as $category => $items) {
+            $catCount = $items->count();
+            $categoryBreakdown[] = [
+                'category' => $category,
+                'count' => $catCount,
+                'averagePrice' => round((float) $items->avg('price'), 2),
+                'percentage' => $totalServices > 0 ? round(($catCount / $totalServices) * 100, 1) : 0,
+            ];
+        }
+
+        // Preview de servicios destacados (hasta 5)
+        $previewServices = $services->take(5)->map(function ($ps) {
+            $baseSvc = $ps->service;
+            return [
+                'uuid' => $ps->uuid,
+                'name' => $ps->custom_name ?: ($baseSvc->name ?? 'Servicio sin nombre'),
+                'category' => $baseSvc->category ?? 'OTHER',
+                'price' => (float) $ps->price,
+                'durationMinutes' => (int) $ps->duration_minutes,
+                'isStandaloneBookable' => (bool) $ps->is_standalone_bookable,
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'data' => [
+                'totalServices' => $totalServices,
+                'averagePrice' => $averagePrice,
+                'standaloneBookableCount' => $standaloneBookableCount,
+                'totalCategories' => count($categoryBreakdown),
+                'categoryBreakdown' => $categoryBreakdown,
+                'previewServices' => $previewServices,
+            ]
+        ]);
+    }
+
     public function storeProviderService(Request $request): JsonResponse
     {
         $validated = $request->validate([

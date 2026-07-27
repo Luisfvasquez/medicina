@@ -372,7 +372,21 @@ Route::prefix('v1')->group(function () {
         Route::get('consultations/{consultation}/pdf', [PdfExportController::class, 'consultation']);
         Route::get('prescriptions/{prescription}/pdf', [PdfExportController::class, 'prescription']);
         Route::get('invoices/{invoice}/pdf', [PdfExportController::class, 'invoice']);
-        Route::get('medical-documents/{medical_document}/pdf', [PdfExportController::class, 'medicalDocument']);
+        // Laboratory Module API Routes
+        Route::prefix('laboratory')->group(function () {
+            Route::get('requests', [\App\Http\Controllers\Api\V1\LabQuoteController::class, 'index']);
+            Route::post('requests/{requestId}/quotes', [\App\Http\Controllers\Api\V1\LabQuoteController::class, 'store']);
+            Route::post('quotes/{offerId}/accept', [\App\Http\Controllers\Api\V1\LabQuoteController::class, 'accept']);
+
+            Route::post('appointments/book', [\App\Http\Controllers\Api\V1\LabAppointmentController::class, 'book']);
+            Route::get('appointments', [\App\Http\Controllers\Api\V1\LabAppointmentController::class, 'index']);
+
+            Route::get('results', [\App\Http\Controllers\Api\V1\LabResultController::class, 'index']);
+            Route::post('results', [\App\Http\Controllers\Api\V1\LabResultController::class, 'store']);
+
+            Route::post('external-orders', [\App\Http\Controllers\Api\V1\ExternalLabOrderController::class, 'store']);
+            Route::get('analytics/metrics', [\App\Http\Controllers\Api\V1\LabAnalyticsController::class, 'getMetrics']);
+        });
     });
 
     // Phase 5: Patient Portal (auth:patient_api)

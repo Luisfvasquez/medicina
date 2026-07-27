@@ -52,6 +52,10 @@ use App\Http\Controllers\Api\V1\Scheduling\ClinicScheduleController;
 use App\Http\Controllers\Api\V1\SpecialtyController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\ServiceController;
+use App\Http\Controllers\Api\V1\PharmacySettingsController;
+use App\Http\Controllers\Api\V1\PharmacyInventoryController as V1PharmacyInventoryController;
+use App\Http\Controllers\Api\V1\PharmacyQuoteController;
+use App\Http\Controllers\Api\V1\PharmacyOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
@@ -373,6 +377,28 @@ Route::prefix('v1')->group(function () {
         Route::get('prescriptions/{prescription}/pdf', [PdfExportController::class, 'prescription']);
         Route::get('invoices/{invoice}/pdf', [PdfExportController::class, 'invoice']);
         Route::get('medical-documents/{medical_document}/pdf', [PdfExportController::class, 'medicalDocument']);
+
+        // ─── PHARMAKO / PHARMACY MODULE ROUTES ───────────────────
+        Route::prefix('pharmacy')->group(function () {
+            // Settings (Manual vs Auto quoting mode)
+            Route::get('settings', [PharmacySettingsController::class, 'show']);
+            Route::put('settings', [PharmacySettingsController::class, 'update']);
+
+            // Inventory & Special Reports
+            Route::get('inventory', [V1PharmacyInventoryController::class, 'index']);
+            Route::post('inventory', [V1PharmacyInventoryController::class, 'store']);
+            Route::put('inventory/{id}', [V1PharmacyInventoryController::class, 'update']);
+            Route::get('inventory/reports/expirations', [V1PharmacyInventoryController::class, 'expirationsReport']);
+            Route::get('inventory/reports/controlled-books', [V1PharmacyInventoryController::class, 'controlledBookReport']);
+
+            // Quote Requests & Offers (Ad-hoc, manual substitution, multi-currency)
+            Route::get('quote-requests', [PharmacyQuoteController::class, 'indexRequests']);
+            Route::post('quote-requests/{id}/offers', [PharmacyQuoteController::class, 'storeOffer']);
+            Route::get('upsell-suggestions', [PharmacyQuoteController::class, 'upsellSuggestions']);
+
+            // Purchase Order & Deferred Stock Deduction
+            Route::post('orders/{id}/confirm', [PharmacyOrderController::class, 'confirmOrder']);
+        });
     });
 
     // Phase 5: Patient Portal (auth:patient_api)

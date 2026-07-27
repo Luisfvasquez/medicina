@@ -15,9 +15,11 @@ class LabResult extends Model
         'patient_id',
         'file_url',
         'result_json',
+        'attachments_json',
         'notes',
         'reviewed_by',
         'reviewed_at',
+        'email_sent_at',
         'status',
         'performed_at',
     ];
@@ -26,8 +28,10 @@ class LabResult extends Model
     {
         return [
             'result_json' => 'array',
+            'attachments_json' => 'array',
             'reviewed_at' => 'datetime',
             'performed_at' => 'datetime',
+            'email_sent_at' => 'datetime',
             'status' => \App\Enums\LabResultStatus::class,
         ];
     }

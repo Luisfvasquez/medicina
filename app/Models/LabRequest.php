@@ -19,6 +19,9 @@ class LabRequest extends Model
         'exams_list',
         'instructions',
         'is_completed',
+        'is_external',
+        'external_patient_name',
+        'external_patient_document',
     ];
 
     public function getConsultationUuidAttribute()
@@ -31,6 +34,7 @@ class LabRequest extends Model
         return [
             'exams_list' => 'array',
             'is_completed' => 'boolean',
+            'is_external' => 'boolean',
         ];
     }
 
@@ -47,5 +51,10 @@ class LabRequest extends Model
     public function consultation()
     {
         return $this->belongsTo(Consultation::class);
+    }
+
+    public function quoteOffers()
+    {
+        return $this->hasMany(LabQuoteOffer::class);
     }
 }

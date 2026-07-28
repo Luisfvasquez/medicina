@@ -420,6 +420,37 @@ Route::prefix('v1')->group(function () {
         });
     });
 
+    // ─── CLINICS MODULE ROUTES ─────────────────
+    Route::prefix('clinics/{branch_id}')->group(function () {
+        // Organization
+        Route::get('departments', [\App\Http\Controllers\Api\ClinicOrganizationController::class, 'indexDepartments']);
+        Route::post('departments', [\App\Http\Controllers\Api\ClinicOrganizationController::class, 'storeDepartment']);
+        Route::get('roles', [\App\Http\Controllers\Api\ClinicOrganizationController::class, 'indexRoles']);
+        Route::post('roles', [\App\Http\Controllers\Api\ClinicOrganizationController::class, 'storeRole']);
+        Route::get('services', [\App\Http\Controllers\Api\ClinicOrganizationController::class, 'indexServices']);
+        Route::post('services', [\App\Http\Controllers\Api\ClinicOrganizationController::class, 'storeService']);
+
+        // Staff
+        Route::get('staff', [\App\Http\Controllers\Api\ClinicStaffController::class, 'index']);
+        Route::post('staff', [\App\Http\Controllers\Api\ClinicStaffController::class, 'store']);
+        Route::put('staff/{id}', [\App\Http\Controllers\Api\ClinicStaffController::class, 'update']);
+
+        // Inpatient
+        Route::get('rooms', [\App\Http\Controllers\Api\InpatientController::class, 'indexRooms']);
+        Route::get('admissions', [\App\Http\Controllers\Api\InpatientController::class, 'indexAdmissions']);
+        Route::post('admissions', [\App\Http\Controllers\Api\InpatientController::class, 'storeAdmission']);
+        Route::post('admissions/{admission_id}/treatment-notes', [\App\Http\Controllers\Api\InpatientController::class, 'storeTreatmentNote']);
+        Route::post('admissions/{admission_id}/medications', [\App\Http\Controllers\Api\InpatientController::class, 'storeMedication']);
+        Route::post('admissions/{admission_id}/service-charges', [\App\Http\Controllers\Api\InpatientController::class, 'storeCharge']);
+
+        // Surgical Planning
+        Route::get('operations', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'indexOperations']);
+        Route::post('operations', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'storeOperation']);
+        Route::post('operations/{operation_id}/team', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'storeTeamMember']);
+        Route::get('supply-orders', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'indexSupplyOrders']);
+        Route::post('supply-orders', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'storeSupplyOrder']);
+    });
+
     // Phase 5: Patient Portal (auth:patient_api)
     Route::prefix('patients/me')->middleware(['auth:patient_api', 'patient.status'])->group(function () {
         Route::get('dashboard', [PatientDashboardController::class, 'index']);

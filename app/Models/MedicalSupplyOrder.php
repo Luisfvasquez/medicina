@@ -15,10 +15,18 @@ class MedicalSupplyOrder extends Model
         'patient_id',
         'surgical_operation_id',
         'prescribing_doctor_id',
+        'provider_profile_id',
         'supplies_list',
         'medical_house_name',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'supplies_list' => 'array',
+        ];
+    }
 
     public function branch(): BelongsTo
     {

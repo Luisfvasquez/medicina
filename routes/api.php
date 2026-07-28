@@ -418,6 +418,32 @@ Route::prefix('v1')->group(function () {
             // Purchase Order & Deferred Stock Deduction
             Route::post('orders/{id}/confirm-purchase', [\App\Http\Controllers\Api\V1\PharmacyOrderController::class, 'confirmPurchase']);
         });
+        // ─── MEDICAL SUPPLY MODULE ROUTES ───────────────────────
+        Route::prefix('medical-supply')->group(function () {
+            // Dashboard
+            Route::get('dashboard/stats', [\App\Http\Controllers\MedicalSupply\SupplyDashboardController::class, 'stats']);
+            Route::get('dashboard/top-demanded', [\App\Http\Controllers\MedicalSupply\SupplyDashboardController::class, 'topDemanded']);
+
+            // Settings
+            Route::get('settings', [\App\Http\Controllers\MedicalSupply\SupplySettingController::class, 'show']);
+            Route::put('settings', [\App\Http\Controllers\MedicalSupply\SupplySettingController::class, 'update']);
+
+            // Staff (Users/Roles)
+            Route::get('staff', [\App\Http\Controllers\MedicalSupply\SupplyStaffController::class, 'index']);
+            Route::post('staff', [\App\Http\Controllers\MedicalSupply\SupplyStaffController::class, 'store']);
+            Route::delete('staff/{id}', [\App\Http\Controllers\MedicalSupply\SupplyStaffController::class, 'destroy']);
+
+            // Inventory
+            Route::get('inventory', [\App\Http\Controllers\MedicalSupply\SupplyInventoryController::class, 'index']);
+            Route::post('inventory', [\App\Http\Controllers\MedicalSupply\SupplyInventoryController::class, 'store']);
+            Route::get('inventory/{id}', [\App\Http\Controllers\MedicalSupply\SupplyInventoryController::class, 'show']);
+            Route::put('inventory/{id}', [\App\Http\Controllers\MedicalSupply\SupplyInventoryController::class, 'update']);
+            Route::delete('inventory/{id}', [\App\Http\Controllers\MedicalSupply\SupplyInventoryController::class, 'destroy']);
+
+            // Quotes
+            Route::post('quotes', [\App\Http\Controllers\MedicalSupply\SupplyQuoteController::class, 'store']);
+            Route::post('quotes/auto-match/{order_id}', [\App\Http\Controllers\MedicalSupply\SupplyQuoteController::class, 'autoMatch']);
+        });
     });
 
     // ─── CLINICS MODULE ROUTES ─────────────────

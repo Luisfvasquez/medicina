@@ -79,4 +79,46 @@ class SurgicalPlanningController extends Controller
 
         return response()->json($order, 201);
     }
+
+    public function emitSupplyOrder(Request $request, $order_id)
+    {
+        $order = MedicalSupplyOrder::findOrFail($order_id);
+        
+        // Simulating the emission to an external provider (Medical House)
+        $order->update(['status' => 'emitted']);
+        
+        return response()->json([
+            'message' => 'Supply order emitted successfully',
+            'order' => $order
+        ]);
+    }
+
+    // Patient History
+    public function recentPatientHistory(Request $request, $operation_id)
+    {
+        $operation = SurgicalOperation::findOrFail($operation_id);
+        $oneMonthAgo = now()->subDays(30);
+
+        // Fetch recent consultations for the same branch
+        $consultations = \App\Models\Consultation::where('patient_id', $operation->patient_id)
+            // Assuming consultations might have clinic_branch_id, if not, we adapt
+            // For now, assume we just fetch recent ones (or use provider_branch_id if applicable)
+            ->where('created_at', '>=', $oneMonthAgo)
+            ->get();
+
+        // Fetch recent hospital admissions for the same branch
+        $admissions = \App\Models\HospitalAdmission::with('treatmentNotes')
+            ->where('patient_id', $operation->patient_id)
+            ->where('clinic_branch_id', $operation->clinic_branch_id)
+            ->where('created_at', '>=', $oneMonthAgo)
+            ->get();
+
+        return response()->json([
+            'operation' => $operation,
+            'recent_history' => [
+                'consultations' => $consultations,
+                'hospital_admissions' => $admissions,
+            ]
+        ]);
+    }
 }

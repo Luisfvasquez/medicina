@@ -446,9 +446,11 @@ Route::prefix('v1')->group(function () {
         // Surgical Planning
         Route::get('operations', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'indexOperations']);
         Route::post('operations', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'storeOperation']);
+        Route::get('operations/{operation_id}/recent-history', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'recentPatientHistory']);
         Route::post('operations/{operation_id}/team', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'storeTeamMember']);
         Route::get('supply-orders', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'indexSupplyOrders']);
         Route::post('supply-orders', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'storeSupplyOrder']);
+        Route::post('supply-orders/{order_id}/emit', [\App\Http\Controllers\Api\SurgicalPlanningController::class, 'emitSupplyOrder']);
     });
 
     // Phase 5: Patient Portal (auth:patient_api)

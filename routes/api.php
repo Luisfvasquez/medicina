@@ -52,6 +52,10 @@ use App\Http\Controllers\Api\V1\Scheduling\ClinicScheduleController;
 use App\Http\Controllers\Api\V1\SpecialtyController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\ServiceController;
+use App\Http\Controllers\Api\V1\PharmacySettingsController;
+use App\Http\Controllers\Api\V1\PharmacyInventoryController as V1PharmacyInventoryController;
+use App\Http\Controllers\Api\V1\PharmacyQuoteController;
+use App\Http\Controllers\Api\V1\PharmacyOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
@@ -372,8 +376,13 @@ Route::prefix('v1')->group(function () {
         Route::get('consultations/{consultation}/pdf', [PdfExportController::class, 'consultation']);
         Route::get('prescriptions/{prescription}/pdf', [PdfExportController::class, 'prescription']);
         Route::get('invoices/{invoice}/pdf', [PdfExportController::class, 'invoice']);
-        // Laboratory Module API Routes
+        Route::get('medical-documents/{medical_document}/pdf', [PdfExportController::class, 'medicalDocument']);
+
+        // ─── PHARMAKO / LABORATORY MODULE ROUTES ─────────────────
         Route::prefix('laboratory')->group(function () {
+            Route::get('settings', [\App\Http\Controllers\Api\V1\LabSettingsController::class, 'show']);
+            Route::put('settings', [\App\Http\Controllers\Api\V1\LabSettingsController::class, 'update']);
+
             Route::get('requests', [\App\Http\Controllers\Api\V1\LabQuoteController::class, 'index']);
             Route::post('requests/{requestId}/quotes', [\App\Http\Controllers\Api\V1\LabQuoteController::class, 'store']);
             Route::post('quotes/{offerId}/accept', [\App\Http\Controllers\Api\V1\LabQuoteController::class, 'accept']);
@@ -386,6 +395,28 @@ Route::prefix('v1')->group(function () {
 
             Route::post('external-orders', [\App\Http\Controllers\Api\V1\ExternalLabOrderController::class, 'store']);
             Route::get('analytics/metrics', [\App\Http\Controllers\Api\V1\LabAnalyticsController::class, 'getMetrics']);
+        });
+
+        // ─── PHARMAKO / PHARMACY MODULE ROUTES ───────────────────
+        Route::prefix('pharmacy')->group(function () {
+            // Settings (Manual vs Auto quoting mode & Schedule)
+            Route::get('settings', [\App\Http\Controllers\Api\V1\PharmacySettingsController::class, 'show']);
+            Route::put('settings', [\App\Http\Controllers\Api\V1\PharmacySettingsController::class, 'update']);
+
+            // Inventory & Special Reports
+            Route::get('inventory', [V1PharmacyInventoryController::class, 'index']);
+            Route::post('inventory', [V1PharmacyInventoryController::class, 'store']);
+            Route::put('inventory/{id}', [V1PharmacyInventoryController::class, 'update']);
+            Route::get('inventory/reports/expirations', [V1PharmacyInventoryController::class, 'expirationsReport']);
+            Route::get('inventory/reports/controlled-books', [V1PharmacyInventoryController::class, 'controlledBookReport']);
+
+            // Quote Requests & Offers (Ad-hoc, manual substitution, multi-currency)
+            Route::get('quote-requests', [PharmacyQuoteController::class, 'indexRequests']);
+            Route::post('quote-requests/{id}/offers', [PharmacyQuoteController::class, 'storeOffer']);
+            Route::get('upsell-suggestions', [PharmacyQuoteController::class, 'upsellSuggestions']);
+
+            // Purchase Order & Deferred Stock Deduction
+            Route::post('orders/{id}/confirm-purchase', [\App\Http\Controllers\Api\V1\PharmacyOrderController::class, 'confirmPurchase']);
         });
     });
 

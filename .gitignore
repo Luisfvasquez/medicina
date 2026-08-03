@@ -29,3 +29,4 @@ Thumbs.db
 .codegraph
 # Local Pi runtime state
 .atl/
+/graphify-out/

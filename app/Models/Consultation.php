@@ -75,9 +75,9 @@ class Consultation extends Model
         return $this->hasOne(VitalSign::class);
     }
 
-    public function labRequest()
+    public function labRequests()
     {
-        return $this->hasOne(LabRequest::class);
+        return $this->hasMany(LabRequest::class);
     }
 
     public function prescription()

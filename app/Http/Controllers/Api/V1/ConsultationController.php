@@ -17,7 +17,7 @@ class ConsultationController extends Controller
         $clinicBranchId = $request->query('clinic_branch_id');
         $patientUuid = $request->query('patient_uuid');
 
-        $query = Consultation::with(['patient', 'user', 'clinicBranch', 'vitalSign', 'labRequest'])
+        $query = Consultation::with(['patient', 'user', 'clinicBranch', 'vitalSign', 'labRequests'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
             ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
             ->when($clinicBranchId, fn($q) => $q->where('clinic_branch_id', $clinicBranchId));
@@ -102,7 +102,7 @@ class ConsultationController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $consultation = Consultation::with(['patient', 'user', 'clinicBranch', 'formTemplate', 'vitalSign', 'labRequest', 'prescription.items.medication', 'followUps'])->where('uuid', $id)->firstOrFail();
+        $consultation = Consultation::with(['patient', 'user', 'clinicBranch', 'formTemplate', 'vitalSign', 'labRequests', 'prescription.items.medication', 'followUps'])->where('uuid', $id)->firstOrFail();
 
         $user = auth('user_api')->user();
         if ($user->role === 'DOCTOR' && $consultation->user_id !== $user->id) {
@@ -220,7 +220,7 @@ class ConsultationController extends Controller
 
         $consultation->syncPatientDataBindings();
 
-        return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign', 'labRequest', 'prescription.items.medication', 'followUps'])]);
+        return response()->json(['data' => $consultation->load(['patient', 'user', 'clinicBranch', 'vitalSign', 'labRequests', 'prescription.items.medication', 'followUps'])]);
     }
 
     public function destroy(string $id): JsonResponse

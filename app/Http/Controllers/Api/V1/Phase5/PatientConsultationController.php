@@ -14,7 +14,7 @@ class PatientConsultationController extends Controller
         $patientAccount = auth('patient_api')->user();
 
         $query = Consultation::where('patient_account_id', $patientAccount->id)
-            ->with(['patient', 'user.specialties', 'clinicBranch', 'prescription', 'vitalSign', 'labRequest']);
+            ->with(['patient', 'user.specialties', 'clinicBranch', 'prescription', 'vitalSign', 'labRequests']);
 
         // Filtro por especialidad del médico
         if ($request->filled('specialty')) {
@@ -48,7 +48,7 @@ class PatientConsultationController extends Controller
         $patientAccount = auth('patient_api')->user();
 
         $consultation = Consultation::where('patient_account_id', $patientAccount->id)
-            ->with(['patient', 'user', 'clinicBranch', 'prescription', 'vitalSign', 'labRequest', 'followUps'])
+            ->with(['patient', 'user', 'clinicBranch', 'prescription', 'vitalSign', 'labRequests', 'followUps'])
             ->findOrFail($id);
 
         return response()->json(['data' => $consultation]);

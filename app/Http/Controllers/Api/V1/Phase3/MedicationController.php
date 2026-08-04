@@ -126,4 +126,35 @@ class MedicationController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function stats(Request $request): JsonResponse
+    {
+        $doctorId = auth('user_api')->id();
+        
+        $baseQuery = Medication::where(function ($q) use ($doctorId) {
+            $q->whereNull('user_id')
+              ->orWhere('user_id', $doctorId);
+        });
+
+        $total = (clone $baseQuery)->count();
+        $prescriptionRequired = (clone $baseQuery)->where('requires_prescription', true)->count();
+        $prescriptionFree = (clone $baseQuery)->where('requires_prescription', false)->count();
+        
+        $routes = (clone $baseQuery)
+            ->select('administration_route', \DB::raw('count(*) as count'))
+            ->groupBy('administration_route')
+            ->pluck('count', 'administration_route');
+
+        $recent = (clone $baseQuery)->latest()->take(2)->get();
+
+        return response()->json([
+            'data' => [
+                'total' => $total,
+                'prescription_required' => $prescriptionRequired,
+                'prescription_free' => $prescriptionFree,
+                'routes_distribution' => $routes,
+                'recent' => $recent
+            ]
+        ]);
+    }
 }

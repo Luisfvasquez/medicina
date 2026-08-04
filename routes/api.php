@@ -264,6 +264,7 @@ Route::prefix('v1')->group(function () {
 
         // Phase 3: Medications / Vademécum
         Route::get('medications/top-prescribed', [MedicationController::class, 'topPrescribed']);
+        Route::get('medications/stats', [MedicationController::class, 'stats']);
         Route::get('medications', [MedicationController::class, 'index']);
         Route::post('medications', [MedicationController::class, 'store'])->middleware('idempotent');
         Route::get('medications/{medication}', [MedicationController::class, 'show']);

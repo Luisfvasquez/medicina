@@ -16,10 +16,12 @@ class FollowUpController extends Controller
         $user = auth('user_api')->user();
         $clinicBranchId = $request->query('clinic_branch_id');
         $consultationId = $request->query('consultation_id');
+        $patientUuid = $request->query('patient_uuid');
 
         $followUps = FollowUp::with(['patient', 'user', 'consultation.clinicBranch'])
             ->when($user->role === 'DOCTOR', fn($q) => $q->where('user_id', $user->id))
             ->when($user->role === 'PATIENT', fn($q) => $q->where('patient_id', $user->patient->id ?? null))
+            ->when($patientUuid, fn($q) => $q->whereHas('patient', fn($p) => $p->where('uuid', $patientUuid)))
             ->when($consultationId, fn($q) => $q->whereHas('consultation', fn($c) => $c->where(is_numeric($consultationId) ? 'id' : 'uuid', $consultationId)))
             ->when($clinicBranchId, fn($q) => $q->whereHas('consultation', fn($c) => is_numeric($clinicBranchId) ? $c->where('clinic_branch_id', $clinicBranchId) : $c->whereHas('clinicBranch', fn($cb) => $cb->where('uuid', $clinicBranchId))))
             ->latest()

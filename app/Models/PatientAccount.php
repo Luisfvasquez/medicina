@@ -79,19 +79,15 @@ class PatientAccount extends Authenticatable implements JWTSubject
             return $value;
         }
 
-        $disk = config('filesystems.default');
+        $disk = 'r2_images'; // Force r2_images for avatars
 
-        if ($disk === 'r2' || $disk === 's3') {
-            try {
-                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
-                    $value,
-                    \Carbon\Carbon::now()->addDays(7)
-                );
-            } catch (\Throwable $e) {
-                return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
-            }
+        try {
+            return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                $value,
+                \Carbon\Carbon::now()->addDays(7)
+            );
+        } catch (\Throwable $e) {
+            return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
         }
-
-        return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
     }
 }

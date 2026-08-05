@@ -102,20 +102,16 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
             return $value;
         }
 
-        $disk = config('filesystems.default');
+        $disk = 'r2_images'; // Force r2_images for signatures
 
-        if ($disk === 'r2' || $disk === 's3') {
-            try {
-                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
-                    $value,
-                    \Carbon\Carbon::now()->addDays(7)
-                );
-            } catch (\Throwable $e) {
-                return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
-            }
+        try {
+            return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                $value,
+                \Carbon\Carbon::now()->addDays(7)
+            );
+        } catch (\Throwable $e) {
+            return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
         }
-
-        return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
     }
 
     public function getLogoUrlAttribute($value): ?string
@@ -128,19 +124,15 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
             return $value;
         }
 
-        $disk = config('filesystems.default');
+        $disk = 'r2_images'; // Force r2_images for logos
 
-        if ($disk === 'r2' || $disk === 's3') {
-            try {
-                return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
-                    $value,
-                    \Carbon\Carbon::now()->addDays(7)
-                );
-            } catch (\Throwable $e) {
-                return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
-            }
+        try {
+            return \Illuminate\Support\Facades\Storage::disk($disk)->temporaryUrl(
+                $value,
+                \Carbon\Carbon::now()->addDays(7)
+            );
+        } catch (\Throwable $e) {
+            return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
         }
-
-        return \Illuminate\Support\Facades\Storage::disk($disk)->url($value);
     }
 }

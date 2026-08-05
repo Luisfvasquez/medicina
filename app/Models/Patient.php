@@ -8,6 +8,8 @@ class Patient extends Model
 {
     use \App\Traits\HasPublicUuid, \Illuminate\Database\Eloquent\SoftDeletes;
 
+    protected $appends = ['avatar_url'];
+
     protected $fillable = [
         'uuid',
         'user_id',
@@ -63,5 +65,10 @@ class Patient extends Model
     public function city()
     {
         return $this->belongsTo(City::class);
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->patientAccount?->avatar_url;
     }
 }

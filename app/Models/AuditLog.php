@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\AuditAction;
 
 class AuditLog extends Model
 {
-    use HasPublicUuid;
+    use \App\Traits\HasPublicUuid;
 
     // HIPAA: No updated_at - logs are immutable
     public const UPDATED_AT = null;

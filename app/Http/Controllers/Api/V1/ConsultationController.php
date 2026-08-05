@@ -309,4 +309,58 @@ class ConsultationController extends Controller
             ]);
         }
     }
+    public function downloadServiceAttachments(string $id, int $serviceIndex): \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+    {
+        $consultation = Consultation::where('uuid', $id)->firstOrFail();
+        
+        $rawServices = $consultation->getRawOriginal('services_performed');
+        $services = is_string($rawServices) ? json_decode($rawServices, true) : ($rawServices ?? []);
+        
+        if (!isset($services[$serviceIndex])) {
+            return response()->json(['error' => 'Service not found'], 404);
+        }
+
+        $attachments = $services[$serviceIndex]['attachments'] ?? [];
+        if (empty($attachments)) {
+            return response()->json(['error' => 'No attachments found for this service'], 404);
+        }
+
+        $zipFileName = 'attachments_' . $consultation->uuid . '_service_' . $serviceIndex . '.zip';
+        $tempPath = sys_get_temp_dir() . '/' . uniqid('luca_zip_') . '.zip';
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tempPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            foreach ($attachments as $index => $pathOrUrl) {
+                try {
+                    $path = $pathOrUrl;
+                    if (filter_var($pathOrUrl, FILTER_VALIDATE_URL) && str_contains($pathOrUrl, 'consultations/services_attachments')) {
+                        $parts = explode('consultations/services_attachments', $pathOrUrl);
+                        if (isset($parts[1])) {
+                            $path = 'consultations/services_attachments' . explode('?', $parts[1])[0];
+                        }
+                    }
+
+                    $extension = strtolower(pathinfo(parse_url($path, PHP_URL_PATH), PATHINFO_EXTENSION));
+                    $isDocument = in_array($extension, ['pdf', 'doc', 'docx']);
+                    $diskName = $isDocument ? 'r2_documents' : 'r2_images';
+
+                    $fileContent = \Illuminate\Support\Facades\Storage::disk($diskName)->get($path);
+                    
+                    if ($fileContent !== null) {
+                        if (!$extension) {
+                            $extension = 'file';
+                        }
+                        $zip->addFromString('attachment_' . ($index + 1) . '.' . $extension, $fileContent);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Error reading attachment from disk for zip: " . $e->getMessage());
+                }
+            }
+            $zip->close();
+        } else {
+            return response()->json(['error' => 'Failed to create zip file'], 500);
+        }
+
+        return response()->download($tempPath, $zipFileName)->deleteFileAfterSend(true);
+    }
 }

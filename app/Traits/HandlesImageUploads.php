@@ -32,7 +32,8 @@ trait HandlesImageUploads
             $fileName = Str::uuid() . '.' . $type;
             $path = $folder . '/' . $fileName;
 
-            $diskName = config('filesystems.default', 'public');
+            // Force r2_images disk for image uploads
+            $diskName = 'r2_images';
             Storage::disk($diskName)->put($path, $data);
 
             return $path;

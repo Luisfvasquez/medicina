@@ -58,6 +58,18 @@ return [
             'use_path_style_endpoint' => true,
             'throw' => true,
         ],
+        // Disco para Documentos de Consulta
+        'r2_documents' => [
+            'driver' => 's3',
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+            'region' => env('CLOUDFLARE_R2_REGION', 'auto'),
+            'bucket' => env('CLOUDFLARE_R2_BUCKET_DOCUMENTS'),
+            'url' => env('CLOUDFLARE_R2_URL'),
+            'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => true,
+        ],
         // Disco 2: Exclusivo para backups de la Base de Datos
         'r2_backups' => [
             'driver'                  => 's3',

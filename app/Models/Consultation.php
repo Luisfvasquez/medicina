@@ -35,9 +35,62 @@ class Consultation extends Model
             'date' => 'datetime',
             'status' => ConsultationStatus::class,
             'dynamic_data' => 'array',
-            'services_performed' => 'array',
             'form_schema_snapshot' => 'array',
         ];
+    }
+
+    protected function servicesPerformed(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function ($value) {
+                $services = is_string($value) ? json_decode($value, true) : $value;
+                if (!is_array($services)) return [];
+                foreach ($services as &$service) {
+                    if (isset($service['attachments']) && is_array($service['attachments'])) {
+                        foreach ($service['attachments'] as &$attachment) {
+                            $path = $attachment;
+                            if (filter_var($attachment, FILTER_VALIDATE_URL) && str_contains($attachment, 'consultations/services_attachments')) {
+                                $parts = explode('consultations/services_attachments', $attachment);
+                                if (isset($parts[1])) {
+                                    $path = 'consultations/services_attachments' . explode('?', $parts[1])[0];
+                                }
+                            }
+                            
+                            if (!filter_var($path, FILTER_VALIDATE_URL)) {
+                                try {
+                                    $extension = strtolower(pathinfo(parse_url($path, PHP_URL_PATH), PATHINFO_EXTENSION));
+                                    $isDocument = in_array($extension, ['pdf', 'doc', 'docx']);
+                                    $diskName = $isDocument ? 'r2_documents' : 'r2_images';
+                                    
+                                    $attachment = \Illuminate\Support\Facades\Storage::disk($diskName)->temporaryUrl($path, now()->addMinutes(60));
+                                } catch (\Exception $e) { }
+                            }
+                        }
+                    }
+                }
+                return $services;
+            },
+            set: function ($value) {
+                $services = is_string($value) ? json_decode($value, true) : $value;
+                if (!is_array($services)) return $value;
+                
+                foreach ($services as &$service) {
+                    if (isset($service['attachments']) && is_array($service['attachments'])) {
+                        foreach ($service['attachments'] as &$attachment) {
+                            if (filter_var($attachment, FILTER_VALIDATE_URL) && str_contains($attachment, 'consultations/services_attachments')) {
+                                $parts = explode('consultations/services_attachments', $attachment);
+                                if (isset($parts[1])) {
+                                    $cleanPath = explode('?', $parts[1])[0];
+                                    $attachment = 'consultations/services_attachments' . $cleanPath;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return json_encode($services);
+            }
+        );
     }
 
     public function user()

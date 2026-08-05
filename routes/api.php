@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Auth\OtpController;
 use App\Http\Controllers\Api\V1\Auth\PatientAuthController;
 use App\Http\Controllers\Api\V1\Auth\UserAuthController;
 use App\Http\Controllers\Api\V1\ConsultationController;
+use App\Http\Controllers\Api\V1\ServiceAttachmentController;
 use App\Http\Controllers\Api\V1\ConsultationLabRequestController;
 use App\Http\Controllers\Api\V1\LabRequestController;
 use App\Http\Controllers\Api\V1\ConsultationVitalSignController;
@@ -177,12 +178,14 @@ Route::prefix('v1')->group(function () {
         Route::delete('form-templates/{form_template}', [FormTemplateController::class, 'destroy']);
 
         // Consultations - idempotent store
+        Route::post('consultations/service-attachments/upload', [ServiceAttachmentController::class, 'upload']);
         Route::get('consultations', [ConsultationController::class, 'index']);
         Route::post('consultations', [ConsultationController::class, 'store'])->middleware('idempotent');
         Route::get('consultations/{consultation}', [ConsultationController::class, 'show']);
         Route::put('consultations/{consultation}', [ConsultationController::class, 'update']);
         Route::patch('consultations/{consultation}', [ConsultationController::class, 'update']);
         Route::delete('consultations/{consultation}', [ConsultationController::class, 'destroy']);
+        Route::get('consultations/{consultation}/services/{service_index}/download-attachments', [ConsultationController::class, 'downloadServiceAttachments']);
 
         // FollowUps - idempotent store
         Route::get('follow-ups', [FollowUpController::class, 'index']);

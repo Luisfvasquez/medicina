@@ -321,12 +321,6 @@ class UserAuthController extends Controller
             if ($request->has('address')) {
                 $providerData['address'] = $request->address;
             }
-            if ($request->has('latitude')) {
-                $providerData['latitude'] = $request->latitude;
-            }
-            if ($request->has('longitude')) {
-                $providerData['longitude'] = $request->longitude;
-            }
             
             if (!empty($providerData)) {
                 $user->providerProfile->update($providerData);

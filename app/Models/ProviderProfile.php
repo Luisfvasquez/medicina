@@ -22,8 +22,6 @@ class ProviderProfile extends Model
         'is_verified',
         'google_maps_url',
         'observations',
-        'latitude',
-        'longitude',
     ];
 
     protected function casts(): array

@@ -55,6 +55,8 @@ class AuthResponseService
                 'isVerified'     => (bool) $user->providerProfile->is_verified,
                 'address'        => $user->providerProfile->address,
                 'phone'          => $user->providerProfile->phone,
+                'latitude'       => $user->providerProfile->latitude,
+                'longitude'      => $user->providerProfile->longitude,
             ] : null,
             'verificationDocuments' => $user->verificationDocuments ? $user->verificationDocuments->map(function ($doc) {
                 return [

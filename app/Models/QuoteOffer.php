@@ -36,6 +36,11 @@ class QuoteOffer extends Model
         return $this->belongsTo(ProviderProfile::class, 'provider_id');
     }
 
+    public function pharmacy()
+    {
+        return $this->belongsTo(ProviderProfile::class, 'provider_id');
+    }
+
     public function quoteOfferItems()
     {
         return $this->hasMany(QuoteOfferItem::class);

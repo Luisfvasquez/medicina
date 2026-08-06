@@ -14,7 +14,10 @@ class UpdateQuoteRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|in:OPEN,CLOSED',
+            'status' => 'sometimes|in:OPEN,CLOSED',
+            'latitude' => 'sometimes|numeric|between:-90,90|nullable',
+            'longitude' => 'sometimes|numeric|between:-180,180|nullable',
+            'search_radius_km' => 'sometimes|numeric|min:1',
         ];
     }
 }

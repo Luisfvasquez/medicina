@@ -26,6 +26,9 @@ class User extends Authenticatable implements \Tymon\JWTAuth\Contracts\JWTSubjec
         'city_id',
         'logo_url',
         'signature_url',
+        'latitude',
+        'longitude',
+        'address',
     ];
 
     protected $hidden = [

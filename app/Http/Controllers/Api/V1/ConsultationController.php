@@ -196,6 +196,39 @@ class ConsultationController extends Controller
                         }
                     }
                 }
+
+                // Generar automáticamente la solicitud de cotización (QuoteRequest) para farmacias
+                $latitude = null;
+                $longitude = null;
+                $cityId = null;
+
+                if ($rx->clinic_branch_id) {
+                    $clinicBranch = \App\Models\ClinicBranch::find($rx->clinic_branch_id);
+                    if ($clinicBranch) {
+                        $latitude = $clinicBranch->latitude;
+                        $longitude = $clinicBranch->longitude;
+                        $cityId = $clinicBranch->city_id;
+                    }
+                } else {
+                    $doctor = auth('user_api')->user();
+                    if ($doctor) {
+                        $latitude = $doctor->latitude;
+                        $longitude = $doctor->longitude;
+                        $cityId = $doctor->city_id;
+                    }
+                }
+
+                if ($latitude && $longitude) {
+                    \App\Models\QuoteRequest::create([
+                        'prescription_id' => $rx->id,
+                        'patient_id' => $rx->patient_id,
+                        'city_id' => $cityId,
+                        'latitude' => $latitude,
+                        'longitude' => $longitude,
+                        'search_radius_km' => 15,
+                        'status' => 'OPEN',
+                    ]);
+                }
             }
         }
 

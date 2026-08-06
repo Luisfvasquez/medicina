@@ -227,6 +227,8 @@ class UserAuthController extends Controller
             'commercial_name' => 'sometimes|string|nullable',
             'rif' => 'sometimes|string|nullable',
             'address' => 'sometimes|string|nullable',
+            'latitude' => 'sometimes|numeric|between:-90,90|nullable',
+            'longitude' => 'sometimes|numeric|between:-180,180|nullable',
         ]);
 
         $userData = [];
@@ -270,6 +272,16 @@ class UserAuthController extends Controller
                 $userData['signature_url'] = $sigVal;
             }
         }
+        
+        if ($request->has('address')) {
+            $userData['address'] = $request->address;
+        }
+        if ($request->has('latitude')) {
+            $userData['latitude'] = $request->latitude;
+        }
+        if ($request->has('longitude')) {
+            $userData['longitude'] = $request->longitude;
+        }
 
         $oldData = $user->toArray();
         $user->update($userData);
@@ -308,6 +320,12 @@ class UserAuthController extends Controller
             }
             if ($request->has('address')) {
                 $providerData['address'] = $request->address;
+            }
+            if ($request->has('latitude')) {
+                $providerData['latitude'] = $request->latitude;
+            }
+            if ($request->has('longitude')) {
+                $providerData['longitude'] = $request->longitude;
             }
             
             if (!empty($providerData)) {

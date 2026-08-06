@@ -44,6 +44,9 @@ class AuthResponseService
             'cityId'          => $user->city?->uuid,
             'status'          => $user->status?->value ?? $user->status,
             'planType'        => $user->plan_type?->value ?? $user->plan_type,
+            'address'         => $user->address,
+            'latitude'        => $user->latitude,
+            'longitude'       => $user->longitude,
             'providerProfile' => $user->providerProfile ? [
                 'id'             => $user->providerProfile->uuid ?? $user->providerProfile->id,
                 'type'           => $user->providerProfile->type,

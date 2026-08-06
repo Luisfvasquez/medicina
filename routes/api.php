@@ -417,7 +417,11 @@ Route::prefix('v1')->group(function () {
             // Quote Requests & Offers (Ad-hoc, manual substitution, multi-currency)
             Route::get('quote-requests', [PharmacyQuoteController::class, 'indexRequests']);
             Route::post('quote-requests/{id}/offers', [PharmacyQuoteController::class, 'storeOffer']);
+            Route::put('quote-requests/{id}/offers/{offerId}', [PharmacyQuoteController::class, 'updateOffer']);
             Route::get('upsell-suggestions', [PharmacyQuoteController::class, 'upsellSuggestions']);
+
+            // Pharmacy Dashboard Summary
+            Route::get('dashboard/summary', [\App\Http\Controllers\Api\V1\PharmacyDashboardController::class, 'summary']);
 
             // Purchase Order & Deferred Stock Deduction
             Route::post('orders/{id}/confirm-purchase', [\App\Http\Controllers\Api\V1\PharmacyOrderController::class, 'confirmPurchase']);

@@ -43,6 +43,40 @@ class PrescriptionController extends Controller
                 }
             }
 
+            // Automate Quote Request generation
+            $latitude = null;
+            $longitude = null;
+            $cityId = null;
+
+            if (!empty($data['clinic_branch_id'])) {
+                $clinicBranch = \App\Models\ClinicBranch::find($data['clinic_branch_id']);
+                if ($clinicBranch) {
+                    $latitude = $clinicBranch->latitude;
+                    $longitude = $clinicBranch->longitude;
+                    $cityId = $clinicBranch->city_id;
+                }
+            } else {
+                // Fallback to the doctor's personal location if independent
+                $doctor = auth('user_api')->user();
+                if ($doctor) {
+                    $latitude = $doctor->latitude;
+                    $longitude = $doctor->longitude;
+                    $cityId = $doctor->city_id;
+                }
+            }
+
+            if ($latitude && $longitude) {
+                \App\Models\QuoteRequest::create([
+                    'prescription_id' => $prescription->id,
+                    'patient_id' => $prescription->patient_id,
+                    'city_id' => $cityId,
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'search_radius_km' => 15,
+                    'status' => 'OPEN',
+                ]);
+            }
+
             return $prescription;
         });
 
@@ -74,6 +108,41 @@ class PrescriptionController extends Controller
         }
 
         $prescription->update($request->validated());
+
+        // Ensure QuoteRequest is generated if it doesn't exist
+        if (!\App\Models\QuoteRequest::where('prescription_id', $prescription->id)->exists()) {
+            $latitude = null;
+            $longitude = null;
+            $cityId = null;
+
+            if ($prescription->clinic_branch_id) {
+                $clinicBranch = \App\Models\ClinicBranch::find($prescription->clinic_branch_id);
+                if ($clinicBranch) {
+                    $latitude = $clinicBranch->latitude;
+                    $longitude = $clinicBranch->longitude;
+                    $cityId = $clinicBranch->city_id;
+                }
+            } else {
+                $doctor = \App\Models\User::find($prescription->user_id);
+                if ($doctor) {
+                    $latitude = $doctor->latitude;
+                    $longitude = $doctor->longitude;
+                    $cityId = $doctor->city_id;
+                }
+            }
+
+            if ($latitude && $longitude) {
+                \App\Models\QuoteRequest::create([
+                    'prescription_id' => $prescription->id,
+                    'patient_id' => $prescription->patient_id,
+                    'city_id' => $cityId,
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'search_radius_km' => 15,
+                    'status' => 'OPEN',
+                ]);
+            }
+        }
 
         return response()->json(['data' => $prescription->load(['patient', 'user', 'consultation', 'items'])]);
     }

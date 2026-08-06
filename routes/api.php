@@ -509,6 +509,7 @@ Route::prefix('v1')->group(function () {
         Route::get('quote-requests', [PatientQuoteRequestController::class, 'index']);
         Route::get('quote-requests/{quote_request}', [PatientQuoteRequestController::class, 'show']);
         Route::get('quote-requests/{quote_request}/offers', [PatientQuoteRequestController::class, 'offers']);
+        Route::post('quote-offers/{offer_id}/checkout', [\App\Http\Controllers\Api\V1\Phase5\PatientCheckoutController::class, 'checkout']);
 
         Route::get('lab-results', [PatientLabResultController::class, 'index']);
         Route::get('lab-results/{lab_result}', [PatientLabResultController::class, 'show']);

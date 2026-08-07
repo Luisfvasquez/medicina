@@ -33,7 +33,8 @@ class PatientCheckoutController extends Controller
                 'data' => $order
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
+            \Illuminate\Support\Facades\Log::error('Patient checkout failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Ha ocurrido un error inesperado al procesar el checkout.'], 400);
         }
     }
 }

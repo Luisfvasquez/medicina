@@ -110,7 +110,8 @@ class UserAuthController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Registration failed: ' . $e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::error('Registration failed: ' . $e->getMessage());
+            return response()->json(['error' => 'El registro ha fallado por un error inesperado.'], 500);
         }
     }
 
@@ -176,7 +177,8 @@ class UserAuthController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Registration failed: ' . $e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::error('Registration failed: ' . $e->getMessage());
+            return response()->json(['error' => 'El registro ha fallado por un error inesperado.'], 500);
         }
     }
 

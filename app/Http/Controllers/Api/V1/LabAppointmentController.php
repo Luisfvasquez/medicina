@@ -36,7 +36,8 @@ class LabAppointmentController extends Controller
                 'data' => $appointment,
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            \Illuminate\Support\Facades\Log::error('Lab appointment failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Ha ocurrido un error al procesar la cita.'], 422);
         }
     }
 

@@ -19,12 +19,14 @@ class PatientCheckoutController extends Controller
     {
         $validated = $request->validate([
             'currency' => 'required|string|in:USD,VES,EUR',
+            'selected_items' => 'sometimes|array',
+            'selected_items.*' => 'integer|exists:quote_offer_items,id',
         ]);
 
         $patientAccount = auth('patient_api')->user();
 
         try {
-            $order = $this->checkoutService->createOrderFromOffer($patientAccount, $offerId, $validated['currency']);
+            $order = $this->checkoutService->createOrderFromOffer($patientAccount, $offerId, $validated['currency'], $validated['selected_items'] ?? null);
 
             return response()->json([
                 'message' => 'Reserva creada exitosamente',

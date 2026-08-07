@@ -15,7 +15,7 @@ class PatientQuoteRequestController extends Controller
         $requests = QuoteRequest::whereHas('patient', function ($q) use ($patientAccount) {
             $q->where('patient_account_id', $patientAccount->id);
         })
-            ->with(['prescription', 'city', 'offers.pharmacy'])
+            ->with(['prescription', 'city', 'offers.pharmacy', 'offers.quoteOfferItems.prescriptionItem.medication', 'offers.quoteOfferItems.inventory', 'offers.quoteOfferItems.substitutedInventory'])
             ->latest()
             ->paginate(20);
 
@@ -29,7 +29,7 @@ class PatientQuoteRequestController extends Controller
         $request = QuoteRequest::whereHas('patient', function ($q) use ($patientAccount) {
             $q->where('patient_account_id', $patientAccount->id);
         })
-            ->with(['prescription.items.medication', 'city', 'offers.pharmacy'])
+            ->with(['prescription.items.medication', 'city', 'offers.pharmacy', 'offers.quoteOfferItems.prescriptionItem.medication', 'offers.quoteOfferItems.inventory', 'offers.quoteOfferItems.substitutedInventory'])
             ->findOrFail($id);
 
         return response()->json(['data' => $request]);
@@ -42,7 +42,7 @@ class PatientQuoteRequestController extends Controller
         $request = QuoteRequest::whereHas('patient', function ($q) use ($patientAccount) {
             $q->where('patient_account_id', $patientAccount->id);
         })
-            ->with(['offers.pharmacy'])
+            ->with(['offers.pharmacy', 'offers.quoteOfferItems.prescriptionItem.medication', 'offers.quoteOfferItems.inventory', 'offers.quoteOfferItems.substitutedInventory'])
             ->findOrFail($id);
 
         return response()->json(['data' => $request->offers]);

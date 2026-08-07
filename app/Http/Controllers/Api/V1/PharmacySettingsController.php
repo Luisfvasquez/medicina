@@ -22,11 +22,21 @@ class PharmacySettingsController extends Controller
                 'uuid' => (string) Str::uuid(),
                 'auto_quoting_enabled' => false,
                 'allow_partial_quotes' => true,
+                'is_24_hours' => false,
+                'delivery_radius_km' => 5.0,
                 'default_currency' => 'USD',
             ]
         );
 
-        return response()->json(['data' => $settings]);
+        $user = $request->user();
+
+        return response()->json([
+            'data' => $settings,
+            'location' => [
+                'latitude' => $user->latitude,
+                'longitude' => $user->longitude,
+            ]
+        ]);
     }
 
     public function update(Request $request)
@@ -41,6 +51,8 @@ class PharmacySettingsController extends Controller
             'allow_partial_quotes' => 'boolean',
             'default_currency' => 'string|max:5',
             'custom_terms' => 'nullable|string',
+            'is_24_hours' => 'boolean',
+            'delivery_radius_km' => 'numeric|min:0',
         ]);
 
         $settings = PharmacySetting::updateOrCreate(

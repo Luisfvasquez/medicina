@@ -15,6 +15,8 @@ class PharmacySetting extends Model
         'allow_partial_quotes',
         'default_currency',
         'custom_terms',
+        'is_24_hours',
+        'delivery_radius_km',
     ];
 
     protected function casts(): array
@@ -22,6 +24,8 @@ class PharmacySetting extends Model
         return [
             'auto_quoting_enabled' => 'boolean',
             'allow_partial_quotes' => 'boolean',
+            'is_24_hours' => 'boolean',
+            'delivery_radius_km' => 'decimal:2',
         ];
     }
 

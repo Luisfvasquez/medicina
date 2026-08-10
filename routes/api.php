@@ -58,6 +58,7 @@ use App\Http\Controllers\Api\V1\PharmacyInventoryController as V1PharmacyInvento
 use App\Http\Controllers\Api\V1\PharmacyQuoteController;
 use App\Http\Controllers\Api\V1\PharmacyOrderController;
 use App\Http\Controllers\Api\V1\PharmacyAnalyticsController;
+use App\Http\Controllers\Api\V1\StorageController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
@@ -280,6 +281,7 @@ Route::prefix('v1')->group(function () {
         Route::get('prescriptions', [PrescriptionController::class, 'index']);
         Route::post('prescriptions', [PrescriptionController::class, 'store'])->middleware('idempotent');
         Route::get('prescriptions/{prescription}', [PrescriptionController::class, 'show']);
+        Route::post('prescriptions/{prescription}/rematch', [PrescriptionController::class, 'reMatch']);
         Route::put('prescriptions/{prescription}', [PrescriptionController::class, 'update']);
         Route::patch('prescriptions/{prescription}', [PrescriptionController::class, 'update']);
         Route::delete('prescriptions/{prescription}', [PrescriptionController::class, 'destroy']);
@@ -294,6 +296,9 @@ Route::prefix('v1')->group(function () {
 
         // Document upload (offline-first binary upload)
         Route::post('documents/upload', [DocumentUploadController::class, 'upload']);
+        
+        // Generic Storage Upload (Invoices, etc)
+        Route::post('storage/upload', [StorageController::class, 'upload']);
 
         // Phase 3: Medical Documents
         Route::get('medical-documents', [MedicalDocumentController::class, 'index']);
@@ -543,3 +548,15 @@ Route::prefix('v1')->group(function () {
         Route::get('document/{publicToken}', [VerifyController::class, 'verifyDocument']);
     });
 });
+
+Route::get('/delete-null-medications', function () {
+    $provider = \App\Models\ProviderProfile::where('uuid', '56ee72a4-f3a7-449a-aa1a-d93feb44d884')->first();
+    if ($provider) {
+        $deleted = \App\Models\PharmacyInventory::where('provider_id', $provider->id)
+                    ->whereNull('medication_id')
+                    ->delete();
+        return "Deleted $deleted records for provider {$provider->id}.";
+    }
+    return "Provider not found.";
+});
+

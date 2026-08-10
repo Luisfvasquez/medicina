@@ -19,11 +19,12 @@ class PharmacyInventoryService
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function (Builder $q) use ($search) {
-                $q->where('active_ingredient', 'like', "%{$search}%")
-                  ->orWhere('ean_code', 'like', "%{$search}%")
-                  ->orWhere('laboratory', 'like', "%{$search}%")
+                $q->whereRaw("unaccent(active_ingredient) ilike unaccent(?)", ["%{$search}%"])
+                  ->orWhereRaw("unaccent(ean_code) ilike unaccent(?)", ["%{$search}%"])
+                  ->orWhereRaw("unaccent(laboratory) ilike unaccent(?)", ["%{$search}%"])
                   ->orWhereHas('medication', function (Builder $mq) use ($search) {
-                      $mq->where('name', 'like', "%{$search}%");
+                      $mq->whereRaw("unaccent(active_principle) ilike unaccent(?)", ["%{$search}%"])
+                         ->orWhereRaw("unaccent(commercial_name) ilike unaccent(?)", ["%{$search}%"]);
                   });
             });
         }

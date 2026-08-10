@@ -23,8 +23,8 @@ class MedicationController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
-                $q->where('active_principle', 'ILIKE', "%{$search}%")
-                  ->orWhere('commercial_name', 'ILIKE', "%{$search}%");
+                $q->whereRaw("unaccent(active_principle) ilike unaccent(?)", ["%{$search}%"])
+                  ->orWhereRaw("unaccent(commercial_name) ilike unaccent(?)", ["%{$search}%"]);
             });
         }
 

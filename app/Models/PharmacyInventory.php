@@ -18,6 +18,7 @@ class PharmacyInventory extends Model
         'sale_condition',
         'stock',
         'min_stock_alert',
+        'pharmacy_inventory_batch_id',
         'batch_number',
         'expiration_date',
         'location_rack',
@@ -48,6 +49,11 @@ class PharmacyInventory extends Model
     public function provider()
     {
         return $this->belongsTo(ProviderProfile::class, 'provider_id');
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(PharmacyInventoryBatch::class, 'pharmacy_inventory_batch_id');
     }
 
     public function medication()

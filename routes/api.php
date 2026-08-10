@@ -57,6 +57,7 @@ use App\Http\Controllers\Api\V1\PharmacySettingsController;
 use App\Http\Controllers\Api\V1\PharmacyInventoryController as V1PharmacyInventoryController;
 use App\Http\Controllers\Api\V1\PharmacyQuoteController;
 use App\Http\Controllers\Api\V1\PharmacyOrderController;
+use App\Http\Controllers\Api\V1\PharmacyAnalyticsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {
@@ -345,6 +346,12 @@ Route::prefix('v1')->group(function () {
         Route::post('pharmacy-inventories', [PharmacyInventoryController::class, 'store'])->middleware('idempotent');
         Route::get('pharmacy-inventories/alerts/low-stock', [PharmacyInventoryController::class, 'lowStockAlerts']);
         Route::get('pharmacy-inventories/alerts/expired', [PharmacyInventoryController::class, 'expired']);
+        
+        // Batches & Invoices
+        Route::get('pharmacy/inventory/batches/metrics', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'metrics']);
+        Route::get('pharmacy/inventory/batches', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'index']);
+        Route::post('pharmacy/inventory/batches', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'store'])->middleware('idempotent');
+
         Route::get('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'show']);
         Route::put('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);
         Route::patch('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);
@@ -420,8 +427,9 @@ Route::prefix('v1')->group(function () {
             Route::put('quote-requests/{id}/offers/{offerId}', [PharmacyQuoteController::class, 'updateOffer']);
             Route::get('upsell-suggestions', [PharmacyQuoteController::class, 'upsellSuggestions']);
 
-            // Pharmacy Dashboard Summary
+            // Pharmacy Dashboard Summary & Analytics
             Route::get('dashboard/summary', [\App\Http\Controllers\Api\V1\PharmacyDashboardController::class, 'summary']);
+            Route::get('analytics', [PharmacyAnalyticsController::class, 'analytics']);
 
             // Purchase Order & Deferred Stock Deduction
             Route::post('orders/{id}/confirm-purchase', [\App\Http\Controllers\Api\V1\PharmacyOrderController::class, 'confirmPurchase']);

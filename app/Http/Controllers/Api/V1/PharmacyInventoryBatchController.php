@@ -85,7 +85,7 @@ class PharmacyInventoryBatchController extends Controller
 
         $validated = $request->validate([
             'batch.documentUrls' => 'nullable|array',
-            'batch.documentUrls.*' => 'url',
+            'batch.documentUrls.*' => 'string',
             'batch.notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.medicationId' => 'nullable|string|exists:medications,uuid',
@@ -131,6 +131,17 @@ class PharmacyInventoryBatchController extends Controller
                 if (is_null($medicationId)) {
                     $attributes['active_ingredient'] = $item['customActivePrinciple'] ?? null;
                     $attributes['laboratory'] = $item['brandName'] ?? null;
+
+                    // Notify admins about the new medication request
+                    $admins = \App\Models\User::where('role', \App\Enums\UserRole::ADMIN)->get();
+                    foreach ($admins as $admin) {
+                        \App\Models\Notification::create([
+                            'user_id' => $admin->id,
+                            'type' => \App\Enums\NotifType::NEW_MEDICATION_REQUEST,
+                            'title' => 'Nuevo Medicamento Detectado',
+                            'message' => 'Una farmacia ha cargado un medicamento no catalogado: ' . ($item['customActivePrinciple'] ?? 'Desconocido') . ' - ' . ($item['brandName'] ?? 'Desconocido'),
+                        ]);
+                    }
                 }
 
                 $inventory = PharmacyInventory::where($attributes)->first();
@@ -146,6 +157,8 @@ class PharmacyInventoryBatchController extends Controller
                             'USD' => $inventory->prices_manual['USD'] ?? 0,
                             'VES' => $item['unitPrice'] ?? ($inventory->prices_manual['VES'] ?? 0),
                         ],
+                        'active_ingredient' => $item['customActivePrinciple'] ?? $inventory->active_ingredient,
+                        'laboratory' => $item['brandName'] ?? $inventory->laboratory,
                     ]);
                 } else {
                     PharmacyInventory::create(array_merge($attributes, [
@@ -160,6 +173,8 @@ class PharmacyInventoryBatchController extends Controller
                             'USD' => 0,
                             'VES' => $item['unitPrice'] ?? 0,
                         ],
+                        'active_ingredient' => $item['customActivePrinciple'] ?? null,
+                        'laboratory' => $item['brandName'] ?? null,
                     ]));
                 }
             }

@@ -279,7 +279,7 @@ class PatientAuthController extends Controller
             'token_type'   => 'bearer',
             'expiresIn'    => (int) config('jwt.ttl') * 60,
             'expires_in'   => (int) config('jwt.ttl') * 60,
-            'user'         => $this->authResponse->patientPayload(JWTAuth::setToken($token)->toUser()),
+            'user'         => $this->authResponse->patientPayload(auth('patient_api')->user()),
         ])->withCookie($this->authResponse->authCookie($token));
     }
 

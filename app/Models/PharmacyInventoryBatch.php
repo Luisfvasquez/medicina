@@ -56,4 +56,9 @@ class PharmacyInventoryBatch extends Model
     {
         return $this->hasMany(PharmacyInventory::class);
     }
+
+    public function batchItems()
+    {
+        return $this->hasMany(PharmacyInventoryBatchItem::class, 'pharmacy_inventory_batch_id');
+    }
 }

@@ -356,6 +356,8 @@ Route::prefix('v1')->group(function () {
         Route::get('pharmacy/inventory/batches/metrics', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'metrics']);
         Route::get('pharmacy/inventory/batches', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'index']);
         Route::post('pharmacy/inventory/batches', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'store'])->middleware('idempotent');
+        Route::get('pharmacy/inventory/batches/{batch}', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'show']);
+        Route::put('pharmacy/inventory/batches/{batch}', [\App\Http\Controllers\Api\V1\PharmacyInventoryBatchController::class, 'update']);
 
         Route::get('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'show']);
         Route::put('pharmacy-inventories/{pharmacy_inventory}', [PharmacyInventoryController::class, 'update']);

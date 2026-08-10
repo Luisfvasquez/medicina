@@ -38,7 +38,7 @@ class PharmacyInventoryController extends Controller
         }
 
         $validated = $request->validate([
-            'medication_id' => 'required|exists:medications,id',
+            'medication_id' => 'nullable|exists:medications,id',
             'ean_code' => 'nullable|string|max:50',
             'active_ingredient' => 'nullable|string|max:255',
             'laboratory' => 'nullable|string|max:255',
@@ -58,9 +58,30 @@ class PharmacyInventoryController extends Controller
         ]);
 
         $validated['provider_id'] = $providerId;
-        $validated['uuid'] = (string) Str::uuid();
+        $validated['uuid'] = (string) \Illuminate\Support\Str::uuid();
+
+        if (empty($validated['medication_id'])) {
+            $validated['medication_id'] = null;
+            // Notify admins about the new medication request
+            $admins = \App\Models\User::where('role', \App\Enums\UserRole::ADMIN)->get();
+            foreach ($admins as $admin) {
+                \App\Models\Notification::create([
+                    'user_id' => $admin->id,
+                    'type' => \App\Enums\NotifType::NEW_MEDICATION_REQUEST,
+                    'title' => 'Nuevo Medicamento Detectado',
+                    'message' => 'Una farmacia ha cargado un medicamento no catalogado: ' . ($validated['active_ingredient'] ?? 'Desconocido') . ' - ' . ($validated['laboratory'] ?? 'Desconocido'),
+                ]);
+            }
+        }
 
         $item = PharmacyInventory::create($validated);
+
+        \App\Models\AuditLog::logCreate(
+            $request->user(),
+            'PharmacyInventory',
+            $item->id,
+            $item->toArray()
+        );
 
         return response()->json(['message' => 'Producto registrado en inventario con éxito.', 'data' => $item->load('medication')], 201);
     }
@@ -89,7 +110,16 @@ class PharmacyInventoryController extends Controller
             'prices_manual' => 'nullable|array',
         ]);
 
+        $oldData = $item->toArray();
         $item->update($validated);
+
+        \App\Models\AuditLog::logUpdate(
+            $request->user(),
+            'PharmacyInventory',
+            $item->id,
+            $oldData,
+            $item->fresh()->toArray()
+        );
 
         return response()->json(['message' => 'Producto de inventario actualizado.', 'data' => $item]);
     }

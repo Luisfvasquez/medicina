@@ -20,6 +20,14 @@ class PharmacyOrderController extends Controller
     {
         $order = $this->orderService->confirmOrder($id);
 
+        \App\Models\AuditLog::logUpdate(
+            $request->user(),
+            'PharmacyOrder',
+            $order->id,
+            [], // Usually old data would go here, but this is an action
+            $order->toArray()
+        );
+
         return response()->json([
             'message' => 'Orden de compra confirmada y stock descontado exitosamente.',
             'data' => $order

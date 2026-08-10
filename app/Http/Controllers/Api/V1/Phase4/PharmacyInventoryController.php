@@ -49,14 +49,30 @@ class PharmacyInventoryController extends Controller
     {
         $inventory = PharmacyInventory::create($request->validated());
 
+        \App\Models\AuditLog::logCreate(
+            $request->user(),
+            'PharmacyInventory',
+            $inventory->id,
+            $inventory->toArray()
+        );
+
         return response()->json(['data' => $inventory->load(['provider', 'medication'])], 201);
     }
 
     public function update(UpdatePharmacyInventoryRequest $request, string $id): JsonResponse
     {
         $inventory = PharmacyInventory::findOrFail($id);
+        $oldData = $inventory->toArray();
 
         $inventory->update($request->validated());
+
+        \App\Models\AuditLog::logUpdate(
+            $request->user(),
+            'PharmacyInventory',
+            $inventory->id,
+            $oldData,
+            $inventory->toArray()
+        );
 
         return response()->json(['data' => $inventory->load(['provider', 'medication'])]);
     }
@@ -70,7 +86,15 @@ class PharmacyInventoryController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $oldData = $inventory->toArray();
         $inventory->delete();
+
+        \App\Models\AuditLog::logDelete(
+            $user,
+            'PharmacyInventory',
+            $inventory->id,
+            $oldData
+        );
 
         return response()->json(null, 204);
     }

@@ -55,10 +55,30 @@ class PharmacySettingsController extends Controller
             'delivery_radius_km' => 'numeric|min:0',
         ]);
 
+        $oldSettings = PharmacySetting::where('provider_id', $providerId)->first();
+        $oldData = $oldSettings ? $oldSettings->toArray() : [];
+
         $settings = PharmacySetting::updateOrCreate(
             ['provider_id' => $providerId],
             $validated
         );
+
+        if ($oldSettings) {
+            \App\Models\AuditLog::logUpdate(
+                $request->user(),
+                'PharmacySetting',
+                $settings->id,
+                $oldData,
+                $settings->toArray()
+            );
+        } else {
+            \App\Models\AuditLog::logCreate(
+                $request->user(),
+                'PharmacySetting',
+                $settings->id,
+                $settings->toArray()
+            );
+        }
 
         return response()->json(['message' => 'Configuración de farmacia actualizada correctamente.', 'data' => $settings]);
     }

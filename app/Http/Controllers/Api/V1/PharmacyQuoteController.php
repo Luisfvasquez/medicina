@@ -97,6 +97,13 @@ class PharmacyQuoteController extends Controller
 
         $offer = $this->quoteService->createQuoteOffer($requestId, $providerId, $validated);
 
+        \App\Models\AuditLog::logCreate(
+            $request->user(),
+            'QuoteOffer',
+            $offer->id,
+            $offer->toArray()
+        );
+
         return response()->json([
             'message' => 'Cotización registrada exitosamente.',
             'data' => $offer
@@ -137,7 +144,16 @@ class PharmacyQuoteController extends Controller
             'items.*.notes' => 'nullable|string',
         ]);
 
+        $oldData = $offer->toArray();
         $updatedOffer = $this->quoteService->updateQuoteOffer($offer, $validated);
+
+        \App\Models\AuditLog::logUpdate(
+            $request->user(),
+            'QuoteOffer',
+            $updatedOffer->id,
+            $oldData,
+            $updatedOffer->toArray()
+        );
 
         return response()->json([
             'message' => 'Cotización actualizada exitosamente.',

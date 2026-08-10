@@ -229,6 +229,8 @@ class ConsultationController extends Controller
                         'status' => 'OPEN',
                     ]);
                 }
+
+                \App\Jobs\MatchPrescriptionWithInventoryJob::dispatch($rx);
             }
         }
 

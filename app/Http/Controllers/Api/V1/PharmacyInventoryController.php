@@ -30,98 +30,58 @@ class PharmacyInventoryController extends Controller
         return response()->json($inventory);
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\Api\V1\PharmacyInventory\StorePharmacyInventoryRequest $request)
     {
         $providerId = $request->user()->providerProfile?->id;
         if (!$providerId) {
             return response()->json(['error' => 'Usuario no tiene perfil de proveedor.'], 403);
         }
 
-        $validated = $request->validate([
-            'medication_id' => 'nullable|exists:medications,id',
-            'ean_code' => 'nullable|string|max:50',
-            'active_ingredient' => 'nullable|string|max:255',
-            'laboratory' => 'nullable|string|max:255',
-            'sale_condition' => 'required|in:free,prescription,controlled',
-            'stock' => 'integer|min:0',
-            'min_stock_alert' => 'integer|min:0',
-            'batch_number' => 'nullable|string|max:100',
-            'expiration_date' => 'nullable|date',
-            'location_rack' => 'nullable|string|max:100',
-            'allows_fractioning' => 'boolean',
-            'units_per_package' => 'integer|min:1',
-            'fraction_unit_name' => 'string|max:50',
-            'package_stock' => 'integer|min:0',
-            'fraction_stock' => 'integer|min:0',
-            'unit_price' => 'nullable|numeric|min:0',
-            'prices_manual' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
 
         $validated['provider_id'] = $providerId;
         $validated['uuid'] = (string) \Illuminate\Support\Str::uuid();
 
-        if (empty($validated['medication_id'])) {
-            $validated['medication_id'] = null;
-            // Notify admins about the new medication request
-            $admins = \App\Models\User::where('role', \App\Enums\UserRole::ADMIN)->get();
-            foreach ($admins as $admin) {
-                \App\Models\Notification::create([
-                    'user_id' => $admin->id,
-                    'type' => \App\Enums\NotifType::NEW_MEDICATION_REQUEST,
-                    'title' => 'Nuevo Medicamento Detectado',
-                    'message' => 'Una farmacia ha cargado un medicamento no catalogado: ' . ($validated['active_ingredient'] ?? 'Desconocido') . ' - ' . ($validated['laboratory'] ?? 'Desconocido'),
-                ]);
+        $item = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $request) {
+            if (empty($validated['medication_id'])) {
+                $validated['medication_id'] = null;
+                // Notify admins about the new medication request (bulk insert)
+                $adminIds = \App\Models\User::where('role', \App\Enums\UserRole::ADMIN)->pluck('id');
+                $now = now();
+                $notifications = $adminIds->map(function ($adminId) use ($validated, $now) {
+                    return [
+                        'user_id' => $adminId,
+                        'type' => \App\Enums\NotifType::NEW_MEDICATION_REQUEST,
+                        'title' => 'Nuevo Medicamento Detectado',
+                        'message' => 'Una farmacia ha cargado un medicamento no catalogado: ' . ($validated['active_ingredient'] ?? 'Desconocido') . ' - ' . ($validated['laboratory'] ?? 'Desconocido'),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })->toArray();
+                
+                if (!empty($notifications)) {
+                    \App\Models\Notification::insert($notifications);
+                }
             }
-        }
 
-        $item = PharmacyInventory::create($validated);
+            $item = PharmacyInventory::create($validated);
 
-        \App\Models\AuditLog::logCreate(
-            $request->user(),
-            'PharmacyInventory',
-            $item->id,
-            $item->toArray()
-        );
+            return $item;
+        });
 
         return response()->json(['message' => 'Producto registrado en inventario con éxito.', 'data' => $item->load('medication')], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(\App\Http\Requests\Api\V1\PharmacyInventory\UpdatePharmacyInventoryRequest $request, $id)
     {
         $providerId = $request->user()->providerProfile?->id;
         $item = PharmacyInventory::where('provider_id', $providerId)->findOrFail($id);
 
-        $validated = $request->validate([
-            'ean_code' => 'nullable|string|max:50',
-            'active_ingredient' => 'nullable|string|max:255',
-            'laboratory' => 'nullable|string|max:255',
-            'sale_condition' => 'in:free,prescription,controlled',
-            'stock' => 'integer|min:0',
-            'min_stock_alert' => 'integer|min:0',
-            'batch_number' => 'nullable|string|max:100',
-            'expiration_date' => 'nullable|date',
-            'location_rack' => 'nullable|string|max:100',
-            'allows_fractioning' => 'boolean',
-            'units_per_package' => 'integer|min:1',
-            'fraction_unit_name' => 'string|max:50',
-            'package_stock' => 'integer|min:0',
-            'fraction_stock' => 'integer|min:0',
-            'unit_price' => 'nullable|numeric|min:0',
-            'prices_manual' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
 
-        $oldData = $item->toArray();
         $item->update($validated);
 
-        \App\Models\AuditLog::logUpdate(
-            $request->user(),
-            'PharmacyInventory',
-            $item->id,
-            $oldData,
-            $item->fresh()->toArray()
-        );
-
-        return response()->json(['message' => 'Producto de inventario actualizado.', 'data' => $item]);
+        return response()->json(['message' => 'Producto actualizado con éxito.', 'data' => $item->load('medication')]);
     }
 
     public function expirationsReport(Request $request)

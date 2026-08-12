@@ -46,5 +46,14 @@ class AppServiceProvider extends ServiceProvider
                 $app->make('request'),
             );
         });
+
+        /*
+        |----------------------------------------------------------------------
+        | Observers
+        |----------------------------------------------------------------------
+        */
+        \App\Models\PharmacyInventory::observe(\App\Observers\AuditObserver::class);
+        \App\Models\PharmacyInventoryBatch::observe(\App\Observers\AuditObserver::class);
+        \App\Models\QuoteOffer::observe(\App\Observers\AuditObserver::class);
     }
 }

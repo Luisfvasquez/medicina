@@ -70,39 +70,16 @@ class PharmacyQuoteController extends Controller
         return response()->json($requests);
     }
 
-    public function storeOffer(Request $request, $requestId)
+    public function storeOffer(\App\Http\Requests\Api\V1\QuoteOffer\StoreQuoteOfferRequest $request, $requestId)
     {
         $providerId = $request->user()->providerProfile?->id;
         if (!$providerId) {
             return response()->json(['error' => 'Usuario no es proveedor.'], 403);
         }
 
-        $validated = $request->validate([
-            'total_price_base' => 'required|numeric|min:0',
-            'currency' => 'string|max:5',
-            'availability' => 'string|nullable',
-            'comments' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.prescription_item_id' => 'nullable|exists:prescription_items,id',
-            'items.*.pharmacy_inventory_id' => 'nullable|exists:pharmacy_inventories,id',
-            'items.*.custom_product_name' => 'nullable|string|max:255',
-            'items.*.is_substituted' => 'boolean',
-            'items.*.substituted_inventory_id' => 'nullable|exists:pharmacy_inventories,id',
-            'items.*.substitution_reason' => 'nullable|string',
-            'items.*.sell_format' => 'in:package,fraction',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.prices_manual' => 'nullable|array',
-            'items.*.notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $offer = $this->quoteService->createQuoteOffer($requestId, $providerId, $validated);
-
-        \App\Models\AuditLog::logCreate(
-            $request->user(),
-            'QuoteOffer',
-            $offer->id,
-            $offer->toArray()
-        );
 
         return response()->json([
             'message' => 'Cotización registrada exitosamente.',
@@ -110,7 +87,7 @@ class PharmacyQuoteController extends Controller
         ], 201);
     }
 
-    public function updateOffer(Request $request, $requestId, $offerId)
+    public function updateOffer(\App\Http\Requests\Api\V1\QuoteOffer\UpdateQuoteOfferRequest $request, $requestId, $offerId)
     {
         $providerId = $request->user()->providerProfile?->id;
         if (!$providerId) {
@@ -126,34 +103,10 @@ class PharmacyQuoteController extends Controller
             return response()->json(['error' => 'Oferta no encontrada o no pertenece a este proveedor.'], 404);
         }
 
-        $validated = $request->validate([
-            'total_price_base' => 'required|numeric|min:0',
-            'currency' => 'string|max:5',
-            'availability' => 'string|nullable',
-            'comments' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.prescription_item_id' => 'nullable|exists:prescription_items,id',
-            'items.*.pharmacy_inventory_id' => 'nullable|exists:pharmacy_inventories,id',
-            'items.*.custom_product_name' => 'nullable|string|max:255',
-            'items.*.is_substituted' => 'boolean',
-            'items.*.substituted_inventory_id' => 'nullable|exists:pharmacy_inventories,id',
-            'items.*.substitution_reason' => 'nullable|string',
-            'items.*.sell_format' => 'in:package,fraction',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.prices_manual' => 'nullable|array',
-            'items.*.notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $oldData = $offer->toArray();
         $updatedOffer = $this->quoteService->updateQuoteOffer($offer, $validated);
-
-        \App\Models\AuditLog::logUpdate(
-            $request->user(),
-            'QuoteOffer',
-            $updatedOffer->id,
-            $oldData,
-            $updatedOffer->toArray()
-        );
 
         return response()->json([
             'message' => 'Cotización actualizada exitosamente.',
